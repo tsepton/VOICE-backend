@@ -1,5 +1,8 @@
 .vscode
 
+/dist/
+/generated/
+
 # Logs
 logs
 *.log
