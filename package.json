@@ -14,13 +14,13 @@
   "description": "",
   "devDependencies": {
     "@types/express": "^5.0.0",
+    "canvas": "^2.11.2",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "canvas": "^2.11.2",
     "dotenv": "^16.4.5",
     "express": "^4.21.1"
   }
