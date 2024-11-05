@@ -12,3 +12,5 @@ nvm use 18
 npm install 
 npm run dev
 ```
+
+You will also need [Ollama](https://github.com/ollama/ollama) running on your machine.
