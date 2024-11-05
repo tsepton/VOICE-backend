@@ -24,9 +24,17 @@ export default class Heatmap {
     this.ctx.drawImage(image, 0, 0, this.width, this.height);
   }
 
-  public save(outputPath: string): void {
-    const buffer = this.canvas.toBuffer();
-    fs.writeFile(outputPath, buffer, () =>
+  public getBase64(): string {
+    return this.canvas.toDataURL('image/jpeg');
+  }
+
+  public getBuffer(): Buffer {
+    // Note : Buffer an encoded PNG image.
+    return this.canvas.toBuffer();
+  }
+
+  public saveOnDisk(outputPath: string): void {
+    fs.writeFile(outputPath, this.getBuffer(), () =>
       console.log(`Heatmap saved at ${outputPath}`)
     );
   }
@@ -75,7 +83,7 @@ export default class Heatmap {
       row.forEach((intensity, x) => {
         const color = this._getColorForIntensity(intensity);
         this.ctx.fillStyle = color;
-        this.ctx.globalAlpha = intensity; 
+        this.ctx.globalAlpha = intensity;
         this.ctx.fillRect(x, y, 1, 1);
       });
     });

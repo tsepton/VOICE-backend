@@ -1,37 +1,33 @@
 import { loadImage } from "canvas";
 import express, { json, Request, urlencoded } from "express";
 import path from "path";
-import Heatmap, { DataPoint } from "./heatmap.ts";
+import { Question } from "./api-types.ts";
+import Heatmap from "./heatmap.ts";
 
-const port = process.env.PORT || 8000;
 const app = express();
+const host = process.env.HOST || "0.0.0.0";
+const port: number = +(process.env.PORT || 3000);
 
 app.use(urlencoded({ extended: true }));
 app.use(json());
 
-app.get(
-  "/ask",
-  async (req: Request<{ image: string; gaze: DataPoint[] }>, res) => {
-    const base64 = req.body.image.contains("data:image/png;base64,")
-      ? req.body.image
-      : `data:image/png;base64,${req.body.image}`;
-    const image = await loadImage(base64);
+app.get("/ask", async (req: Request<Question>, res) => {
+  const image = await loadImage(req.body.image);
 
-    // TODO - optimize this
-    console.time("heatmap generation");
-    const outputPath: string = path.join(
-      "generated",
-      `heatmap-${Date.now()}.png`
-    );
-    const heatmap = new Heatmap(image);
-    heatmap.generate(req.body.gaze);
-    heatmap.save(outputPath);
-    console.timeEnd("heatmap generation");
+  // TODO - optimize this
+  console.time("heatmap generation");
+  const outputPath: string = path.join(
+    "generated",
+    `heatmap-${Date.now()}.jpg`
+  );
+  const heatmap = new Heatmap(image);
+  heatmap.generate(req.body.gaze);
+  heatmap.saveOnDisk(outputPath);
+  console.timeEnd("heatmap generation");
 
-    res.status(200).json({ answer: "TODO" });
-  }
-);
+  res.status(200).json({ answer: "TODO" });
+});
 
-app.listen(port, () => {
-  console.log(`Server is listening at port ${port}`);
+app.listen(3000, host, () => {
+  console.log(`Server is listening at ${host}:${port}`);
 });
