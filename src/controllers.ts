@@ -12,7 +12,7 @@ export default function initControllers(app: Express) {
 
   app.get("/ask", async (req: Request<Question>, res) => {
     // TODO - use express validator instead
-    if (req.body.query.trim() == "") {
+    if (!req.body.query || req.body.query.trim() == "") {
       res.status(400).json({ error: "Query is empty." });
       return;
     }
