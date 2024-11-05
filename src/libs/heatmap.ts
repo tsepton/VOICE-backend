@@ -1,12 +1,6 @@
 import { Canvas, CanvasRenderingContext2D, createCanvas, Image } from "canvas";
 import fs from "fs";
-
-export interface DataPoint {
-  x: number;
-  y: number;
-  radius: number;
-  value: number;
-}
+import { AggregatedStarePoint } from "../types/internal.ts";
 
 export default class Heatmap {
   private canvas: Canvas;
@@ -24,8 +18,9 @@ export default class Heatmap {
     this.ctx.drawImage(image, 0, 0, this.width, this.height);
   }
 
-  public getBase64(): string {
-    return this.canvas.toDataURL('image/jpeg');
+  public get(mime: 'png' | 'jpeg'): string {
+    const type = mime === 'png' ? 'image/png' : 'image/jpeg' as 'image/png';
+    return this.canvas.toDataURL(type);
   }
 
   public getBuffer(): Buffer {
@@ -39,7 +34,7 @@ export default class Heatmap {
     );
   }
 
-  public async generate(data: DataPoint[]): Promise<void> {
+  public async generate(data: AggregatedStarePoint[]): Promise<void> {
     const gaussian = (dist: number, radius: number) => {
       const sigma = radius / 3;
       return Math.exp(-(dist * dist) / (2 * sigma * sigma));

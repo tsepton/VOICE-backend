@@ -1,32 +1,19 @@
-import { loadImage } from "canvas";
-import express, { json, Request, urlencoded } from "express";
-import path from "path";
-import { Question } from "./api-types.ts";
-import Heatmap from "./heatmap.ts";
+import express, { json, urlencoded } from "express";
+import initControllers from "./controllers.ts";
 
 const app = express();
 const host = process.env.HOST || "0.0.0.0";
 const port: number = +(process.env.PORT || 3000);
 
-app.use(urlencoded({ extended: true }));
-app.use(json());
+app.use(json({limit: '200mb'}));
+app.use(urlencoded({ extended: true, limit: '200mb' }));
 
-app.get("/ask", async (req: Request<Question>, res) => {
-  const image = await loadImage(req.body.image);
-
-  // TODO - optimize this
-  console.time("heatmap generation");
-  const outputPath: string = path.join(
-    "generated",
-    `heatmap-${Date.now()}.jpg`
-  );
-  const heatmap = new Heatmap(image);
-  heatmap.generate(req.body.gaze);
-  heatmap.saveOnDisk(outputPath);
-  console.timeEnd("heatmap generation");
-
-  res.status(200).json({ answer: "TODO" });
+app.use((req, res, next) => {
+  console.log(`Route accessed: ${req.method} ${req.originalUrl}`);
+  next();
 });
+
+initControllers(app);
 
 app.listen(3000, host, () => {
   console.log(`Server is listening at ${host}:${port}`);
