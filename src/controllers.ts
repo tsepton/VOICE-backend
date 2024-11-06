@@ -13,16 +13,17 @@ export default function initControllers(app: Express) {
   app.get("/ask", async (req: Request<Question>, res) => {
     // TODO - use express validator instead
     if (!req.body.query || req.body.query.trim() == "") {
-      res.status(400).json({ error: "Query is empty." });
+      res.status(400).json({ error: "Query is invalid." });
       return;
     }
   
-    if (!req.body.gaze.length) {
-      res.status(400).json({ error: "Gaze is empty." });
+    if (!req.body.gaze || !req.body.gaze.length) {
+      res.status(400).json({ error: "Gaze is invalid." });
       return;
     }
   
     if (
+      !req.body.image ||
       !req.body.image.startsWith("data:image/jpg;base64,") &&
       !req.body.image.startsWith("data:image/jpeg;base64,") &&
       !req.body.image.startsWith("data:image/png;base64,")
