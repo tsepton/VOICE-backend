@@ -2,7 +2,7 @@
 > This repository is part of the Vass project.  
 
 ## Development
-Make sure to add `HOST` (default=`localhost`) and `PORT` (default=`3000`) variable inside the `.env` file at the root of the folder hierarchy. 
+Make sure to add `HOST` (default=`0.0.0.0`) and `PORT` (default=`3000`) variable inside the `.env` file at the root of the folder hierarchy. 
 Run the following: 
 ```bash
 mkdir generated
