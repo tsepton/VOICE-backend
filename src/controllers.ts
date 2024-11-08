@@ -1,4 +1,4 @@
-import { loadImage } from "canvas";
+import { Image, loadImage } from "canvas";
 import { Express, Request } from "express";
 import * as manager from "./manager.ts";
 import { Question, StarePoint } from "./types/exposed.ts";
@@ -31,10 +31,17 @@ export default function initControllers(app: Express) {
       res.status(400).json({ error: "Image is invalid." });
       return;
     }
+    let image: Image; 
+    try {
+      image = await loadImage(req.body.image);
+    } catch (e) {
+      res.status(400).json({ error: "Base64 is malformed or type is not supported." });
+      return;
+    }
 
     const processed: ProcessedQuestion = {
       query: req.body.query,
-      image: await loadImage(req.body.image),
+      image,
       gaze: processGaze(req.body.gaze),
     };
 
