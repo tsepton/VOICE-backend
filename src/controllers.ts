@@ -16,12 +16,12 @@ export default function initControllers(app: Express) {
       res.status(400).json({ error: "Query is invalid." });
       return;
     }
-  
+
     if (!req.body.gaze || !req.body.gaze.length) {
       res.status(400).json({ error: "Gaze is invalid." });
       return;
     }
-  
+
     if (
       !req.body.image ||
       !req.body.image.startsWith("data:image/jpg;base64,") &&
@@ -31,9 +31,14 @@ export default function initControllers(app: Express) {
       res.status(400).json({ error: "Image is invalid." });
       return;
     }
-    let image: Image; 
+    let image: Image;
+    let gaze: AggregatedStarePoint[];
     try {
       image = await loadImage(req.body.image);
+      gaze = processGaze(req.body.gaze);
+      gaze.forEach(element => {
+        console.log(element)
+      });
     } catch (e) {
       res.status(400).json({ error: "Base64 is malformed or type is not supported." });
       return;
@@ -42,7 +47,7 @@ export default function initControllers(app: Express) {
     const processed: ProcessedQuestion = {
       query: req.body.query,
       image,
-      gaze: processGaze(req.body.gaze),
+      gaze,
     };
 
     res.status(200).json({ answer: await manager.ask(processed) });
@@ -56,7 +61,7 @@ function processGaze(gaze: StarePoint[]): AggregatedStarePoint[] {
   return gaze.map((point) => ({
     x: point.x,
     y: point.y,
-    value: 1,
-    radius: 20,
+    value: 4,
+    radius: 250,
   }));
 }
