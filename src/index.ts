@@ -10,7 +10,7 @@ app.use(urlencoded({ extended: true, limit: '200mb' }));
 
 app.use((req, res, next) => {
   console.log(`Route accessed: ${req.method} ${req.originalUrl}`);
-  console.log(`Request body: ${JSON.stringify(req.body)}`);
+  // console.log(`Request body: ${JSON.stringify(req.body)}`);
   next();
 });
 

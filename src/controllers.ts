@@ -36,9 +36,6 @@ export default function initControllers(app: Express) {
     try {
       image = await loadImage(req.body.image);
       gaze = processGaze(req.body.gaze);
-      gaze.forEach(element => {
-        console.log(element)
-      });
     } catch (e) {
       res.status(400).json({ error: "Base64 is malformed or type is not supported." });
       return;
