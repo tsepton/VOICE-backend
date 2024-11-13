@@ -23,6 +23,7 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
-    "ollama": "^0.5.9"
+    "ollama": "^0.5.9",
+    "zod": "^3.23.8"
   }
 }
