@@ -42,7 +42,7 @@ export default class Heatmap {
 
     const intensityGrid = new Array(this.height)
       .fill(0)
-      .map(() => new Array(this.width).fill(0));
+      .map(() => new Array(this.width).fill(1));
     data.forEach((point) => {
       const { x, y, value, radius } = point;
 

@@ -14,12 +14,10 @@ export interface ProcessedQuestion {
   gaze: AggregatedStarePoint[];
 }
 
-// Base Either type
 export abstract class Either<L, R> {
   abstract match<T>(onLeft: (left: L) => T, onRight: (right: R) => T): T;
 }
 
-// Left variant
 export class Left<L, R> extends Either<L, R> {
   constructor(public left: L) {
     super();
@@ -30,7 +28,6 @@ export class Left<L, R> extends Either<L, R> {
   }
 }
 
-// Right variant
 export class Right<L, R> extends Either<L, R> {
   constructor(public right: R) {
     super();
@@ -49,17 +46,19 @@ export function createRight<L, R>(right: R): Either<L, R> {
   return new Right(right);
 }
 
-export function tryCatch<T>(fn: () => T | Promise<T>): Promise<Either<InternalServerError, T>>;
+export function tryCatch<T>(
+  fn: () => T | Promise<T>
+): Promise<Either<InternalServerError, T>>;
 export async function tryCatch<R>(
-  fn: () => Promise<R>,  // The function is now async
+  fn: () => Promise<R>
 ): Promise<Either<InternalServerError, R>> {
   try {
-    const result = fn();  
+    const result = fn();
 
     if (result instanceof Promise) {
-      return createRight(await result);  // Return Right if successful
-    } else return createRight(result);  // Return Right if successful
+      return createRight(await result);
+    } else return createRight(result);
   } catch (e: unknown) {
-    return createLeft(new InternalServerError("Something went wrong.", e));  // Return Left if error
+    return createLeft(new InternalServerError("Something went wrong.", e));
   }
 }
