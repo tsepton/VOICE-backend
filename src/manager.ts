@@ -1,7 +1,7 @@
 import path from "path";
+import assistant from "./libs/assistant.ts";
 import Heatmap from "./libs/heatmap.ts";
 import { ProcessedQuestion } from "./types/internal.ts";
-import assistant from "./libs/assistant.ts";
 
 // TODO - return type
 export async function ask(question: ProcessedQuestion): Promise<string> {
@@ -16,8 +16,9 @@ export async function ask(question: ProcessedQuestion): Promise<string> {
   console.timeEnd("heatmap generation");
 
   // LLM querying
+  console.time("llm generation");
   const noMimeType = heatmap.get("jpeg").replace("data:image/jpeg;base64,", "");
   const answer = await assistant.prompt(noMimeType, query);
-  console.log(answer);
+  console.timeEnd("llm generation");
   return answer;
 }

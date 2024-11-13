@@ -82,8 +82,6 @@ export default class Heatmap {
         this.ctx.fillRect(x, y, 1, 1);
       });
     });
-
-    console.log("Heatmap generated");
   }
 
   private _getColorForIntensity(intensity: number) {
