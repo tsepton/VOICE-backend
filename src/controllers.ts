@@ -1,64 +1,21 @@
-import { Image, loadImage } from "canvas";
 import { Express, Request } from "express";
 import * as manager from "./manager.ts";
-import { Question, StarePoint } from "./types/exposed.ts";
-import { AggregatedStarePoint, ProcessedQuestion } from "./types/internal.ts";
+import { Question } from "./types/exposed.ts";
+import { process } from "./validators.ts";
 
 export default function initControllers(app: Express) {
   app.get("/", (_, res) => {
-    console.info("Server is up and running!");
     res.status(200).json({ message: "Server is up and running!" });
   });
 
   app.get("/ask", async (req: Request<Question>, res) => {
-    // TODO - use express validator instead
-    if (!req.body.query || req.body.query.trim() == "") {
-      res.status(400).json({ error: "Query is invalid." });
-      return;
-    }
-
-    if (!req.body.gaze || !req.body.gaze.length) {
-      res.status(400).json({ error: "Gaze is invalid." });
-      return;
-    }
-
-    if (
-      !req.body.image ||
-      !req.body.image.startsWith("data:image/jpg;base64,") &&
-      !req.body.image.startsWith("data:image/jpeg;base64,") &&
-      !req.body.image.startsWith("data:image/png;base64,")
-    ) {
-      res.status(400).json({ error: "Image is invalid." });
-      return;
-    }
-    let image: Image;
-    let gaze: AggregatedStarePoint[];
-    try {
-      image = await loadImage(req.body.image);
-      gaze = processGaze(req.body.gaze);
-    } catch (e) {
-      res.status(400).json({ error: "Base64 is malformed or type is not supported." });
-      return;
-    }
-
-    const processed: ProcessedQuestion = {
-      query: req.body.query,
-      image,
-      gaze,
-    };
-
-    res.status(200).json({ answer: await manager.ask(processed) });
+    (await process(req)).match(
+      (error) => {
+        res.status(error.code).json(error);
+      },
+      async (question) => {
+        res.status(200).json({ answer: await manager.ask(question) });
+      }
+    );
   });
-
-}
-
-// TODO - this should be process(Request<Question>): ProcessedQuestion {}
-function processGaze(gaze: StarePoint[]): AggregatedStarePoint[] {
-  // TODO
-  return gaze.map((point) => ({
-    x: point.x,
-    y: point.y,
-    value: 4,
-    radius: 250,
-  }));
 }
