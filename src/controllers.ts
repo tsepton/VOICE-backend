@@ -1,6 +1,7 @@
 import { Express, Request } from "express";
 import * as manager from "./manager.ts";
 import { Question } from "./types/exposed.ts";
+import { tryCatch } from "./types/internal.ts";
 import { process } from "./validators.ts";
 
 export default function initControllers(app: Express) {
@@ -14,7 +15,14 @@ export default function initControllers(app: Express) {
         res.status(error.code).json(error);
       },
       async (question) => {
-        res.status(200).json({ answer: await manager.ask(question) });
+        (await tryCatch(() => manager.ask(question))).match(
+          (error) => {
+            res.status(error.code).json(error);
+          },
+          (answer) => {
+            res.status(200).json({ answer });
+          }
+        );
       }
     );
   });
