@@ -1,4 +1,5 @@
 import { Image } from "canvas";
+import { InternalServerError } from "./errors.ts";
 
 export interface AggregatedStarePoint {
   x: number;
@@ -46,4 +47,19 @@ export function createLeft<L, R>(left: L): Either<L, R> {
 
 export function createRight<L, R>(right: R): Either<L, R> {
   return new Right(right);
+}
+
+export function tryCatch<T>(fn: () => T | Promise<T>): Promise<Either<InternalServerError, T>>;
+export async function tryCatch<R>(
+  fn: () => Promise<R>,  // The function is now async
+): Promise<Either<InternalServerError, R>> {
+  try {
+    const result = fn();  
+
+    if (result instanceof Promise) {
+      return createRight(await result);  // Return Right if successful
+    } else return createRight(result);  // Return Right if successful
+  } catch (e: unknown) {
+    return createLeft(new InternalServerError("Something went wrong.", e));  // Return Left if error
+  }
 }

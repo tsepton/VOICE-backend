@@ -3,6 +3,7 @@ export type HttpError = {
   message: string;
 };
 
+// Errors 400
 export interface HttpClientError extends HttpError {
   code: number;
 }
@@ -22,4 +23,20 @@ export class UnsupportedMediaTypeError extends BaseHttpClientError {
 
 export class UnprocessableContentError extends BaseHttpClientError {
   code = 422;
+}
+
+// Errors 500
+export interface HttpServerError extends HttpError {
+  code: number;
+}
+
+abstract class BaseHttpServorError extends Error implements HttpClientError  {
+  abstract code: number;
+  constructor(public message: string, public info: any = undefined) {
+    super();
+  }
+}
+
+export class InternalServerError extends BaseHttpServorError {
+  code = 500;
 }
