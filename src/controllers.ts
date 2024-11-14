@@ -1,5 +1,5 @@
 import { Express, Request } from "express";
-import * as manager from "./manager.ts";
+import * as domain from "./domain.ts";
 import { Question } from "./types/exposed.ts";
 import { tryCatch } from "./types/internal.ts";
 import { process } from "./validators.ts";
@@ -15,7 +15,7 @@ export default function initControllers(app: Express) {
         res.status(error.code).json(error);
       },
       async (question) => {
-        (await tryCatch(() => manager.ask(question))).match(
+        (await tryCatch(() => domain.ask(question))).match(
           (error) => {
             res.status(error.code).json(error);
           },
