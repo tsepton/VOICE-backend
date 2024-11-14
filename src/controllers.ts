@@ -38,12 +38,8 @@ export function initHttp(app: Express) {
       },
       async (question) => {
         (await tryCatch(() => domain.ask(question))).match(
-          (error) => {
-            res.status(error.code).json(error);
-          },
-          (answer) => {
-            res.status(200).json({ answer });
-          }
+          (error) => res.status(error.code).json(error),
+          (answer) => res.status(200).json({ answer })
         );
       }
     );
@@ -54,29 +50,20 @@ export function initWebsocket(wss: WebSocketServer) {
   wss.on("connection", (ws, req) => {
     console.log(`WebSocket connection established on ${req.url}`);
 
-    if (req.url === "/ping") {
-      ws.send(JSON.stringify({ message: "pong" }));
-    } else if (req.url === "/ask") {
+    if (req.url === "/ping") ws.send(JSON.stringify({ message: "pong" }));
+    else if (req.url === "/ask") {
       ws.on("message", async (message) => {
         console.log(`Websocket message received on ${req.url}:`, message);
 
         (await tryCatch(() => JSON.parse(message.toString()))).match(
-          (error) => {
-            ws.send(JSON.stringify(error));
-          },
+          (error) => ws.send(JSON.stringify(error)),
           async (question) => {
             (await process(question)).match(
-              (error) => {
-                ws.send(JSON.stringify(error));
-              },
+              (error) => ws.send(JSON.stringify(error)),
               async (question) => {
                 (await tryCatch(() => domain.ask(question))).match(
-                  (error) => {
-                    ws.send(JSON.stringify(error));
-                  },
-                  (answer) => {
-                    ws.send(JSON.stringify(answer));
-                  }
+                  (error) => ws.send(JSON.stringify(error)),
+                  (answer) => ws.send(JSON.stringify(answer))
                 );
               }
             );
