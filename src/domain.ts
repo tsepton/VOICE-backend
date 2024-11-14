@@ -18,9 +18,7 @@ export async function ask(question: ProcessedQuestion): Promise<string> {
 
   // LLM querying
   console.time("llm generation");
-  const noMimeTypeOriginal = original.replace("data:image/jpeg;base64,", "");
-  const noMimeTypeHeatmap = heatmap.get("jpeg").replace("data:image/jpeg;base64,", "");
-  const answer = await assistant.prompt(query, noMimeTypeOriginal, noMimeTypeHeatmap);
+  const answer = await assistant.prompt(query, original, heatmap.get("jpeg"));
   console.timeEnd("llm generation");
   return answer;
 }
