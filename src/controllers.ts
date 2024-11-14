@@ -27,11 +27,11 @@ export function initHttp(app: Express) {
   });
 
   // Routes
-  app.get("/ping", (_, res) => {
-    res.status(200).json({ message: "pong" });
+  app.get("/status", (_, res) => {
+    res.status(200).json({ message: "alive" });
   });
 
-  app.get("/ask", async (req: Request<Question>, res) => {
+  app.get("/question", async (req: Request<Question>, res) => {
     (await process(req?.body)).match(
       (error) => {
         res.status(error.code).json(error);
@@ -50,8 +50,8 @@ export function initWebsocket(wss: WebSocketServer) {
   wss.on("connection", (ws, req) => {
     console.log(`WebSocket connection established on ${req.url}`);
 
-    if (req.url === "/ping") ws.send(JSON.stringify({ message: "pong" }));
-    else if (req.url === "/ask") {
+    if (req.url === "/status") ws.send(JSON.stringify({ message: "alive" }));
+    else if (req.url === "/question") {
       ws.on("message", async (message) => {
         console.log(`Websocket message received on ${req.url}:`, message);
 
