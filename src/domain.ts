@@ -1,4 +1,3 @@
-import path from "path";
 import assistant from "./libs/assistant/assistant.ts";
 import Heatmap from "./libs/heatmap.ts";
 import { ProcessedQuestion } from "./types/internal.ts";
@@ -11,9 +10,7 @@ export async function ask(question: ProcessedQuestion): Promise<string> {
   console.time("heatmap generation");
   const heatmap = new Heatmap(image);
   const original = heatmap.get("jpeg");
-  heatmap.saveOnDisk(path.join("generated", `original-${Date.now()}.png`));
   await heatmap.generate(gaze);
-  heatmap.saveOnDisk(path.join("generated", `heatmap-${Date.now()}.png`));
   console.timeEnd("heatmap generation");
 
   // LLM querying
