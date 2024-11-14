@@ -1,27 +1,25 @@
 import { Image, loadImage } from "canvas";
-import { Request } from "express";
 import {
-    BadRequestError,
-    HttpClientError,
-    UnprocessableContentError,
-    UnsupportedMediaTypeError,
+  BadRequestError,
+  HttpClientError,
+  UnprocessableContentError,
+  UnsupportedMediaTypeError,
 } from "./types/errors.ts";
 import { Question, QuestionSchema, StarePoint } from "./types/exposed.ts";
 import {
-    AggregatedStarePoint,
-    createLeft,
-    createRight,
-    Either,
-    ProcessedQuestion,
+  AggregatedStarePoint,
+  createLeft,
+  createRight,
+  Either,
+  ProcessedQuestion,
 } from "./types/internal.ts";
 
 export async function process(
-  req: Request<Question>
+  body: Question 
 ): Promise<Either<HttpClientError, ProcessedQuestion>> {
 
-    console.log(req.body);
-    
-  const parsedBody = QuestionSchema.safeParse(req.body);
+
+  const parsedBody = QuestionSchema.safeParse(body);
   if (!parsedBody.success)
     return createLeft(
       new BadRequestError("Invalid body data types.", parsedBody.error)
