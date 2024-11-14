@@ -1,28 +1,18 @@
-import express, { json, urlencoded } from "express";
-import initControllers from "./controllers.ts";
+import express from "express";
+import http from "http";
+import { WebSocketServer } from "ws";
+import { initHttp, initWebsocket } from "./controllers.ts";
 
 const app = express();
 const host = process.env.HOST || "0.0.0.0";
 const port: number = +(process.env.PORT || 3000);
 
-app.use(json({limit: '200mb'}));
-app.use(urlencoded({ extended: true, limit: '200mb' }));
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
 
-app.use((req, res, next) => {
-  console.log(`Route accessed: ${req.method} ${req.originalUrl}`);
-  // console.log(`Request body: ${JSON.stringify(req.body)}`);
-  next();
-});
+initHttp(app);
+initWebsocket(wss);
 
-app.use((req, res, next) => {
-  res.on('finish', () => {
-    console.log(`Response sent: ${req.method} ${req.originalUrl} - Status: ${res.statusCode}`);
-  });
-  next();
-});
-
-initControllers(app);
-
-app.listen(3000, host, () => {
+server.listen(3000, host, () => {
   console.log(`Server is listening at ${host}:${port}`);
 });
