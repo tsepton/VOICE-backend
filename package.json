@@ -21,9 +21,9 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@langchain/ollama": "^0.1.2",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
-    "ollama": "^0.5.9",
     "zod": "^3.23.8"
   }
 }
