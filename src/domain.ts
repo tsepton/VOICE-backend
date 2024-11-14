@@ -1,5 +1,5 @@
 import path from "path";
-import assistant from "./libs/assistant.ts";
+import assistant from "./libs/assistant/assistant.ts";
 import Heatmap from "./libs/heatmap.ts";
 import { ProcessedQuestion } from "./types/internal.ts";
 
