@@ -37,7 +37,7 @@ export function initHttp(app: Express) {
         res.status(error.code).json(error);
       },
       async (question) => {
-        (await tryCatch(() => domain.ask(question))).match(
+        (await tryCatch(() => domain.askWithHeatmap(question))).match(
           (error) => res.status(error.code).json(error),
           (answer) => res.status(200).json({ answer })
         );
@@ -61,7 +61,7 @@ export function initWebsocket(wss: WebSocketServer) {
             (await process(question)).match(
               (error) => ws.send(JSON.stringify(error)),
               async (question) => {
-                (await tryCatch(() => domain.ask(question))).match(
+                (await tryCatch(() => domain.askWithHeatmap(question))).match(
                   (error) => ws.send(JSON.stringify(error)),
                   (answer) => ws.send(JSON.stringify(answer))
                 );

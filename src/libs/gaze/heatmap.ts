@@ -1,38 +1,7 @@
-import { Canvas, CanvasRenderingContext2D, createCanvas, Image } from "canvas";
-import fs from "fs";
-import { AggregatedStarePoint } from "../types/internal.ts";
+import { AggregatedStarePoint } from "../../types/internal.ts";
+import { BaseGazeProcessor } from "./gaze-processor.ts";
 
-export default class Heatmap {
-  private canvas: Canvas;
-  private ctx: CanvasRenderingContext2D;
-
-  private width: number;
-  private height: number;
-
-  public constructor(image: Image) {
-    this.width = image.width;
-    this.height = image.height;
-    this.canvas = createCanvas(this.width, this.height);
-    this.ctx = this.canvas.getContext("2d");
-
-    this.ctx.drawImage(image, 0, 0, this.width, this.height);
-  }
-
-  public get(mime: 'png' | 'jpeg'): string {
-    const type = mime === 'png' ? 'image/png' : 'image/jpeg' as 'image/png';
-    return this.canvas.toDataURL(type);
-  }
-
-  public getBuffer(): Buffer {
-    // Note : Buffer an encoded PNG image.
-    return this.canvas.toBuffer();
-  }
-
-  public saveOnDisk(outputPath: string): void {
-    fs.writeFile(outputPath, this.getBuffer(), () =>
-      console.log(`Heatmap saved at ${outputPath}`)
-    );
-  }
+export default class Heatmap extends BaseGazeProcessor {
 
   public async generate(data: AggregatedStarePoint[]): Promise<void> {
     const gaussian = (dist: number, radius: number) => {
