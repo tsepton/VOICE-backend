@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@langchain/ollama": "^0.1.2",
+    "@langchain/openai": "^0.3.13",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "ws": "^8.18.0",
