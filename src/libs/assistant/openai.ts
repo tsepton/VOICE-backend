@@ -21,12 +21,11 @@ export default class OpenAIAssistant extends BaseZeroShotLearning {
   ].join("\n\n");
 
   protected _llm = new ChatOpenAI({
-    model: `${process.env.MODEL ?? "gpt-4o"}`,
+    model: `${process.env.MODEL === `DEFAULT` ? "gpt-4o" : process.env.MODEL}`,
     temperature: 0,
     maxTokens: undefined,
     timeout: undefined,
     maxRetries: 2,
     apiKey: process.env.OPENAI_API_KEY,
   });
-
 }
