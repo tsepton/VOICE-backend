@@ -33,6 +33,11 @@ export abstract class BaseGazeToImageProcessor implements GazeToImageProcessor {
     this.ctx = this.canvas.getContext("2d");
 
     this.ctx.drawImage(image, 0, 0, this.width, this.height);
+    
+    // Flip the canvas vertically so that the origin is at the bottom-left corner
+    // Default is at the top-left corner
+    this.ctx.translate(0, this.ctx.canvas.height); 
+    this.ctx.scale(1, -1); 
   }
 
   public getBuffer(): Buffer {
