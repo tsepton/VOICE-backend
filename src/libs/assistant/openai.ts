@@ -1,6 +1,5 @@
-import { BaseZeroShotLearningWithVision } from "./vision-zero-shot-learning.ts";
-
 import { ChatOpenAI } from "@langchain/openai";
+import { BaseZeroShotLearningWithVision } from "./vision-zero-shot-learning.ts";
 
 export default class OpenAIAssistant extends BaseZeroShotLearningWithVision {
   protected _system = [
