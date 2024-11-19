@@ -34,9 +34,9 @@ export interface TextBasedAssistant extends Assistant {
   ) => Promise<string>;
 }
 
-const factory: Assistant =
+const visionFactory: VisionBasedAssistant =
   process.env.USE_LOCAL === "false"
     ? new OpenAIAssistant()
     : new OllamaAssistant();
 
-export default factory;
+export default visionFactory;

@@ -63,7 +63,7 @@ function processGaze(gaze: StarePoint[]): AggregatedStarePoint[] {
   return gaze.map((point) => ({
     x: point.x,
     y: point.y,
-    value: 4,
-    radius: 25,
+    value: 100,
+    radius: 250,
   }));
 }
