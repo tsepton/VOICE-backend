@@ -3,14 +3,22 @@ import fs from "fs";
 import { AggregatedStarePoint } from "../../types/internal.ts";
 
 export interface GazeProcessor {
-  generate(data: AggregatedStarePoint[]): Promise<void>;
+  process(data: AggregatedStarePoint[]): Promise<void>;
+}
+
+export interface GazeToImageProcessor extends GazeProcessor {
   saveOnDisk(outputPath: string): void;
   getBuffer(): Buffer;
   get(mime: "png" | "jpeg"): string;
 }
 
-export abstract class BaseGazeProcessor implements GazeProcessor {
-  public abstract generate(data: AggregatedStarePoint[]): Promise<void>;
+export interface GazeToDescriptionProcessor extends GazeProcessor {
+  get(): string[];
+  getAllOther(): string[];
+}
+
+export abstract class BaseGazeToImageProcessor implements GazeToImageProcessor {
+  public abstract process(data: AggregatedStarePoint[]): Promise<void>;
 
   protected canvas: Canvas;
   protected ctx: CanvasRenderingContext2D;

@@ -1,9 +1,9 @@
 import { AggregatedStarePoint } from "../../types/internal.ts";
-import { BaseGazeProcessor } from "./gaze-processor.ts";
+import { BaseGazeToImageProcessor } from "./gaze-processor.ts";
 
-export default class Heatmap extends BaseGazeProcessor {
+export default class Heatmap extends BaseGazeToImageProcessor {
 
-  public async generate(data: AggregatedStarePoint[]): Promise<void> {
+  public async process(data: AggregatedStarePoint[]): Promise<void> {
     const gaussian = (dist: number, radius: number) => {
       const sigma = radius / 3;
       return Math.exp(-(dist * dist) / (2 * sigma * sigma));

@@ -23,7 +23,7 @@ async function ask(
       ? new Heatmap(image)
       : new Pointer(image);
   const original = gazeRepr.get("jpeg");
-  await gazeRepr.generate(gaze);
+  await gazeRepr.process(gaze);
   console.timeEnd(`gaze generation ${timestamp}`);
 
   // LLM querying

@@ -1,8 +1,8 @@
 import { AggregatedStarePoint } from "../../types/internal.ts";
-import { BaseGazeProcessor } from "./gaze-processor.ts";
+import { BaseGazeToImageProcessor } from "./gaze-processor.ts";
 
-export default class Pointer extends BaseGazeProcessor {
-  public async generate(data: AggregatedStarePoint[]): Promise<void> {
+export default class Pointer extends BaseGazeToImageProcessor {
+  public async process(data: AggregatedStarePoint[]): Promise<void> {
     throw new Error("Method not implemented.");
   }
 

@@ -1,8 +1,8 @@
-import { BaseZeroShotLearning } from "./zero-shot-learning.ts";
+import { BaseZeroShotLearningWithVision } from "./vision-zero-shot-learning.ts";
 
 import { ChatOpenAI } from "@langchain/openai";
 
-export default class OpenAIAssistant extends BaseZeroShotLearning {
+export default class OpenAIAssistant extends BaseZeroShotLearningWithVision {
   protected _system = [
     "You are an assistant for question-answering tasks. " +
       "Use the provided images as context to answer the question. " +

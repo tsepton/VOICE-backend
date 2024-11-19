@@ -1,8 +1,8 @@
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { Assistant } from "./assistant.ts";
+import { VisionBasedAssistant } from "./assistant.ts";
 
-export abstract class BaseZeroShotLearning implements Assistant {
+export abstract class BaseZeroShotLearningWithVision implements VisionBasedAssistant {
   protected abstract _llm: BaseChatModel;
 
   protected abstract _system: string;
