@@ -13,7 +13,6 @@ export function initHttp(app: Express) {
   // Middlewares
   app.use((req, res, next) => {
     console.log(`Route accessed: ${req.method} ${req.originalUrl}`);
-    // console.log(`Request body: ${JSON.stringify(req.body)}`);
     next();
   });
 
