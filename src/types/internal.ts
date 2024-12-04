@@ -59,6 +59,7 @@ export async function tryCatch<R>(
       return createRight(await result);
     } else return createRight(result);
   } catch (e: unknown) {
+    console.error(e);
     return createLeft(new InternalServerError("Something went wrong.", e));
   }
 }
