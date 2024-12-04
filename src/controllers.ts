@@ -43,6 +43,20 @@ export function initHttp(app: Express) {
       }
     );
   });
+
+  app.get("/question-temp", async (req: Request<Question>, res) => {
+    (await process(req?.body)).match(
+      (error) => {
+        res.status(error.code).json(error);
+      },
+      async (question) => {
+        (await tryCatch(() => domain.askWithTextDescription(question))).match(
+          (error) => res.status(error.code).json(error),
+          (answer) => res.status(200).json({ answer })
+        );
+      }
+    );
+  });
 }
 
 export function initWebsocket(wss: WebSocketServer) {
