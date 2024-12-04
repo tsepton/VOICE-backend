@@ -26,6 +26,7 @@ export class Yolov8BasedImageDescription implements GazeToDescriptionProcessor {
   }
 
   public async init(): Promise<void> {
+    // todo - use env to precise model location path and size
     this._model = await onnx.InferenceSession.create("./models/yolov8m.onnx");
   }
 
@@ -42,11 +43,23 @@ export class Yolov8BasedImageDescription implements GazeToDescriptionProcessor {
 
     const pixels = await this._prepareInput(this.image!);
     const output = await this._askModel(pixels);
-    const todo = this._processOutput(output);
-    this._lookedAt = todo.map((item) => item[4]); // todo check with gaze data
-    this._notLookedAt = this._cocoClasses.filter(
-      (item) => !this._lookedAt.includes(item)
-    );
+    const itemsInView = this._processOutput(output);
+
+    this._lookedAt = itemsInView
+      .map((item) => {
+        const [x1, y1, x2, y2, object, probability] = item;
+        const isIntersecting = data.some((point) => {
+          const [px, py] = [point.x, point.y];
+          return px >= x1 && px <= x2 && py >= y1 && py <= y2;
+        });
+
+        if (!isIntersecting) return undefined;
+        return object;
+      })
+      .filter((item) => item !== undefined);
+    this._notLookedAt = itemsInView
+      .map((item) => item[4])
+      .filter((item) => !this._lookedAt.includes(item));
     return;
   }
 
@@ -59,9 +72,9 @@ export class Yolov8BasedImageDescription implements GazeToDescriptionProcessor {
       blue = [];
 
     for (let i = 0; i < pixels.length; i += 4) {
-      red.push(pixels[i] / 255.0); 
-      green.push(pixels[i + 1] / 255.0); 
-      blue.push(pixels[i + 2] / 255.0); 
+      red.push(pixels[i] / 255.0);
+      green.push(pixels[i + 1] / 255.0);
+      blue.push(pixels[i + 2] / 255.0);
     }
 
     return [...red, ...green, ...blue];
