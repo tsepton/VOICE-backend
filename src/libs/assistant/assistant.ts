@@ -1,3 +1,4 @@
+import GazePointAR from "./gaze-point-ar.ts";
 import OllamaAssistant from "./ollama.ts";
 import OpenAIAssistant from "./openai.ts";
 
@@ -22,7 +23,7 @@ export interface TextBasedAssistant extends Assistant {
    * gazedAt : All the objects that the user gazed at
    * pointedAt : All the objects that the user pointed at
    * otherObjects : All the other objects in the image which user did not gazed nor pointed at
-   * 
+   *
    * Note :
    * pointedAt is based upon the GazePointAR pipeline. It is not used in the current implementation for now.
    */
@@ -39,4 +40,6 @@ const visionFactory: VisionBasedAssistant =
     ? new OpenAIAssistant()
     : new OllamaAssistant();
 
-export default visionFactory;
+const textualFactory: TextBasedAssistant = new GazePointAR();
+
+export default { textual: textualFactory, vision: visionFactory };

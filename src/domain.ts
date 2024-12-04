@@ -11,14 +11,14 @@ export async function askWithHeatmap(
 
   // Gaze representation generation
   console.time(`gaze generation ${timestamp}`);
-  const gazeRepr = new Heatmap(image)
-  const original = gazeRepr.get("jpeg");
-  await gazeRepr.process(gaze);
+  const gazeRepresentation = new Heatmap(image)
+  const original = gazeRepresentation.get("jpeg");
+  await gazeRepresentation.process(gaze);
   console.timeEnd(`gaze generation ${timestamp}`);
 
   // LLM querying
   console.time(`llm generation ${timestamp}`);
-  const answer = await assistant.prompt(query, original, gazeRepr.get("jpeg"));
+  const answer = await assistant.vision.prompt(query, original, gazeRepresentation.get("jpeg"));
   console.timeEnd(`llm generation ${timestamp}`);
   return answer;
 }
@@ -26,12 +26,20 @@ export async function askWithHeatmap(
 export async function askWithTextDescription(
   question: ProcessedQuestion,
 ): Promise<string> {
+  const timestamp = Date.now();
+  const { query, gaze, image } = question;
 
-  console.time("textual description generation");
-  const textualDescriptor = new Yolov8BasedImageDescription(question.image);
-  await textualDescriptor.process(question.gaze);
+   // Gaze representation textual description
+   console.time("textual description generation");
+  const textualDescriptor = new Yolov8BasedImageDescription(image);
+  await textualDescriptor.process(gaze);
   console.timeEnd("textual description generation");
-  console.log(textualDescriptor.get());
 
-  return Promise.resolve("Not implemented yet");
+  // LLM querying
+  console.time(`llm generation ${timestamp}`);
+  const gazedAt = textualDescriptor.get();
+  const otherObjects = textualDescriptor.getAllOther();
+  const answer = await assistant.textual.prompt(query, gazedAt, otherObjects);
+  console.timeEnd(`llm generation ${timestamp}`);
+  return answer;
 }
