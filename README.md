@@ -1,10 +1,10 @@
-# Vass Backend
-> This repository is part of the Vass project.  
+# VOICE Backend
+> This repository is part of the VOICE Operating In Contextual Environment (VOICE) project.  
 
 
 
 ## Specifying the LLM  
-In order for the vass-backend to work, it is necessary to specify the LLM you want to use. 
+In order for the backend to work, it is necessary to specify the LLM you want to use. 
 Current version supports communication with a distant OpenAI model, or locally with a model from [Ollama](https://ollama.com/).
 
 ### Self-hosting
