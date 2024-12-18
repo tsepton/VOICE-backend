@@ -1,5 +1,5 @@
 # VOICE Backend
-> This repository is part of the VOICE Operating In Contextual Environment (VOICE) project.  
+> This repository is part of the [VOICE Operating In Contextual Environments (VOICE)](https://github.com/tsepton/VOICE) project.  
 
 
 
