@@ -30,7 +30,7 @@ export function initHttp(app: Express) {
     res.status(200).json({ message: "alive" });
   });
 
-  app.get("/question", async (req: Request<Question>, res) => {
+  app.post("/question", async (req: Request<Question>, res) => {
     (await process(req?.body)).match(
       (error) => {
         res.status(error.code).json(error);
@@ -44,7 +44,7 @@ export function initHttp(app: Express) {
     );
   });
 
-  app.get("/question-temp", async (req: Request<Question>, res) => {
+  app.post("/question-temp", async (req: Request<Question>, res) => {
     (await process(req?.body)).match(
       (error) => {
         res.status(error.code).json(error);
