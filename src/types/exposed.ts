@@ -15,3 +15,9 @@ export type Question = z.infer<typeof QuestionSchema>;
 
 // TODO: determine Answer type
 export interface Answer {}
+
+
+export interface ChatInformation {
+  uuid: string;
+  messages: string[];
+}
