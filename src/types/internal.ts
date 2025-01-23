@@ -1,3 +1,4 @@
+import { BaseMessage } from "@langchain/core/messages";
 import { Image } from "canvas";
 import { InternalServerError } from "./errors.ts";
 
@@ -12,6 +13,11 @@ export interface ProcessedQuestion {
   query: string;
   image: Image;
   gaze: AggregatedStarePoint[];
+}
+
+export interface Answer {
+  value: string;
+  context: BaseMessage[];
 }
 
 export abstract class Either<L, R> {
