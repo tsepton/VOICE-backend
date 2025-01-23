@@ -1,7 +1,7 @@
 import { ChatOllama } from "@langchain/ollama";
-import { BaseZeroShotLearningWithVision } from "./vision-zero-shot-learning.ts";
+import { BaseZeroShotLearning } from "./vision-zero-shot-learning.ts";
 
-export default class OllamaAssistant extends BaseZeroShotLearningWithVision {
+export default class OllamaAgent extends BaseZeroShotLearning {
   protected _system = [
     "You are an assistant for question-answering tasks. " +
       "Use the provided images as context to answer the question. " +

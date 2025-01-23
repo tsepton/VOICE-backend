@@ -1,80 +1,41 @@
-import { Express, json, Request, urlencoded } from "express";
 import { WebSocketServer } from "ws";
-import * as domain from "./domain.ts";
-import { Question } from "./types/exposed.ts";
+import { default as Conversation } from "./domain.ts";
+import { ChatInformation } from "./types/exposed.ts";
 import { tryCatch } from "./types/internal.ts";
 import { process } from "./validators.ts";
 
-export function initHttp(app: Express) {
-  // Configurations
-  app.use(json({ limit: "200mb" }));
-  app.use(urlencoded({ extended: true, limit: "200mb" }));
-
-  // Middlewares
-  app.use((req, res, next) => {
-    console.log(`Route accessed: ${req.method} ${req.originalUrl}`);
-    next();
-  });
-
-  app.use((req, res, next) => {
-    res.on("finish", () => {
-      console.log(
-        `Response sent: ${req.method} ${req.originalUrl} - Status: ${res.statusCode}`
-      );
-    });
-    next();
-  });
-
-  // Routes
-  app.get("/status", (_, res) => {
-    res.status(200).json({ message: "alive" });
-  });
-
-  app.post("/question", async (req: Request<Question>, res) => {
-    (await process(req?.body)).match(
-      (error) => {
-        res.status(error.code).json(error);
-      },
-      async (question) => {
-        (await tryCatch(() => domain.askWithHeatmap(question))).match(
-          (error) => res.status(error.code).json(error),
-          (answer) => res.status(200).json({ answer })
-        );
-      }
-    );
-  });
-
-  app.post("/question-temp", async (req: Request<Question>, res) => {
-    (await process(req?.body)).match(
-      (error) => {
-        res.status(error.code).json(error);
-      },
-      async (question) => {
-        (await tryCatch(() => domain.askWithTextDescription(question))).match(
-          (error) => res.status(error.code).json(error),
-          (answer) => res.status(200).json({ answer })
-        );
-      }
-    );
-  });
-}
-
 export function initWebsocket(wss: WebSocketServer) {
+
   wss.on("connection", (ws, req) => {
-    console.log(`WebSocket connection established on ${req.url}`);
+    console.log(`WebSocket connection established on context : ${req.url}`);
+    let conversation: Conversation | undefined;
 
-    if (req.url === "/status") ws.send(JSON.stringify({ message: "alive" }));
-    else if (req.url === "/question") {
+    if (req.url === "/chat") {
+      // TODO - this should be moved in validators.ts
+      const uuid: string | undefined = req.url.split("uuid=").splice(1).pop();
+
+      if (!uuid) conversation = Conversation.new();
+      else if (Conversation.exists(uuid))
+        conversation = Conversation.load(uuid)!;
+      else {
+        ws.close(422, `Invalid chat UUID: ${uuid}`);
+        return;
+      }
+      const info: ChatInformation = {
+        uuid: uuid!,
+        messages: conversation.messages.map((m) => m.content.toString()),
+      };
+      ws.send(JSON.stringify(info));
+
       ws.on("message", async (message) => {
-        console.log(`Websocket message received on ${req.url}:`, message);
-
+        console.log(`${uuid}: new message.`);
         (await tryCatch(() => JSON.parse(message.toString()))).match(
           (error) => ws.send(JSON.stringify(error)),
           async (question) => {
             (await process(question)).match(
               (error) => ws.send(JSON.stringify(error)),
               async (question) => {
-                (await tryCatch(() => domain.askWithHeatmap(question))).match(
+                (await tryCatch(() => conversation!.ask(question))).match(
                   (error) => ws.send(JSON.stringify(error)),
                   (answer) => ws.send(JSON.stringify(answer))
                 );
@@ -83,10 +44,11 @@ export function initWebsocket(wss: WebSocketServer) {
           }
         );
       });
-    }
+    } else ws.close(404, "Invalid URL context");
 
     ws.on("close", () => {
-      console.log(`WebSocket connection closed on ${req.url}`);
+      conversation?.saveOnDisk();
+      console.log(`WebSocket connection closed on context ${req.url}`);
     });
   });
 }
