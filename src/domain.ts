@@ -1,6 +1,7 @@
 import { BaseMessage } from "@langchain/core/messages";
+import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import defaultAgent, { Agent } from "./libs/agent/agent.ts";
+import defaultAgent, { Agent, getAgent } from "./libs/agent/agent.ts";
 import Heatmap from "./libs/gaze/heatmap.ts";
 import { ProcessedQuestion } from "./types/internal.ts";
 
@@ -14,19 +15,21 @@ export default class Conversation {
   public static load(uuid: string): Conversation {
     if (!this.exists(uuid)) throw new Error("Invalid UUID");
 
-    const agent = new defaultAgent(); // TODO - load the agent that was specified, should be saved on disk
-    const messages: BaseMessage[] = []; // TODO - load messages from disk
-    return this.constructor(uuid, messages, agent);
+    const file = fs.readFileSync(`generated/${uuid}.json`, 'utf8');
+    const { agent: agentName, messages }: ConversationTxt = JSON.parse(file);
+
+    console.log(`${uuid} loaded.`);
+    return new Conversation(uuid, getAgent(agentName), messages);
   }
 
   public static new(): Conversation {
     const uuid = uuidv4();
     if (this.exists(uuid)) return this.new();
-    else return this.constructor(uuid, [], new defaultAgent());
+    else return new Conversation(uuid, new defaultAgent(), []);
   }
 
   public static exists(uuid: string): boolean {
-    throw new Error("TODO - not implemented yet");
+    return fs.existsSync(`generated/${uuid}.json`);
   }
 
   private constructor(uuid: string, agent: Agent, messages: BaseMessage[]) {
@@ -61,10 +64,26 @@ export default class Conversation {
   }
 
   public saveOnDisk(): void {
-    throw new Error("TODO - Not implemented yet");
+    const directory = `generated`;
+    const file = `${directory}/${this.uuid}.json`;
+    if (!fs.existsSync(directory)) fs.mkdirSync(directory);
+    fs.writeFile(file, this.txt, (err) => {
+      if (err) console.log(err);
+      else console.log(`${this.uuid} saved.`);
+    });
+  }
+
+  public get txt(): string {
+    return JSON.stringify({
+      uuid: this.uuid,
+      agent: this._agent.name,
+      messages: this._messages ?? [],
+    });
   }
 
   public get messages(): BaseMessage[] {
     return this._messages;
   }
 }
+
+type ConversationTxt = { agent: string; uuid: string; messages: BaseMessage[] };

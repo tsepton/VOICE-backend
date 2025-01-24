@@ -13,15 +13,24 @@ export interface Agent {
     original: string,
     withGaze: string,
     history: BaseMessage[]
-  ) => Promise<BaseMessage[]>; 
+  ) => Promise<BaseMessage[]>;
 
+  readonly name: string;
 }
 
-
-// TODO - the factory should send the class to instance, not an object now, as they will have memory
 const defaultAgent =
-  process.env.USE_LOCAL === "false"
-    ? OpenAIAgent
-    : OllamaAssistant;
+  process.env.USE_LOCAL === "false" ? OpenAIAgent : OllamaAssistant;
+
+export function getAgent(name: string) {
+  switch (name) {
+    case "OllamaAgent":
+      return new OllamaAssistant();
+    case "OpenAIAgent":
+      return new OpenAIAgent();
+    default:
+      console.warn(`Agent ${name} not found, using default agent.`);
+      return new defaultAgent();
+  }
+}
 
 export default defaultAgent;

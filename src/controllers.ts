@@ -10,25 +10,25 @@ export function initWebsocket(wss: WebSocketServer) {
     console.log(`WebSocket connection established on context : ${req.url}`);
     let conversation: Conversation | undefined;
 
-    if (req.url === "/chat") {
+    if (req.url?.includes("/chat")) {
       // TODO - this should be moved in validators.ts
       const uuid: string | undefined = req.url.split("uuid=").splice(1).pop();
 
       if (!uuid) conversation = Conversation.new();
-      else if (Conversation.exists(uuid))
+      else if (uuid.length > 0 && Conversation.exists(uuid))
         conversation = Conversation.load(uuid)!;
       else {
-        ws.close(422, `Invalid chat UUID: ${uuid}`);
+        ws.close(1002, `Invalid chat UUID: ${uuid}`);
         return;
       }
       const info: ChatInformation = {
-        uuid: uuid!,
-        messages: conversation.messages.map((m) => m.content.toString()),
+        uuid: conversation.uuid,
+        messages: conversation.messages.map((m) => JSON.stringify(m.content)),
       };
       ws.send(JSON.stringify(info));
 
       ws.on("message", async (message) => {
-        console.log(`${uuid}: new message.`);
+        console.assert(conversation !== undefined);
         (await tryCatch(() => JSON.parse(message.toString()))).match(
           (error) => ws.send(JSON.stringify(error)),
           async (question) => {
@@ -44,11 +44,10 @@ export function initWebsocket(wss: WebSocketServer) {
           }
         );
       });
-    } else ws.close(404, "Invalid URL context");
+    } else ws.close(1002, "Invalid URL context");
 
     ws.on("close", () => {
       conversation?.saveOnDisk();
-      console.log(`WebSocket connection closed on context ${req.url}`);
     });
   });
 }

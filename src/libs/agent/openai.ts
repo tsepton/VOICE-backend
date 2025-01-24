@@ -2,6 +2,8 @@ import { ChatOpenAI } from "@langchain/openai";
 import { BaseZeroShotLearning } from "./vision-zero-shot-learning.ts";
 
 export default class OpenAIAgent extends BaseZeroShotLearning {
+  public readonly name: string = "OpenAIAgent";
+  
   protected _system = [
     "You are an assistant for question-answering tasks. " +
       "Use the provided images as context to answer the question. " +

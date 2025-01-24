@@ -7,6 +7,9 @@ import {
 import { Agent } from "./agent.ts";
 
 export abstract class BaseZeroShotLearning implements Agent {
+
+  public abstract name: string;
+  
   protected abstract _llm: BaseChatModel;
 
   protected abstract _system: string;
@@ -15,7 +18,7 @@ export abstract class BaseZeroShotLearning implements Agent {
     query: string,
     original: string,
     heatmap: string,
-    history: BaseMessage[] // todo
+    history: BaseMessage[] 
   ): Promise<BaseMessage[]> {
     const images = [original, heatmap].map((uri) => ({
       type: "image_url",
