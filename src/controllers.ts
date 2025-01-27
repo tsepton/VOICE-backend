@@ -2,30 +2,32 @@ import { WebSocketServer } from "ws";
 import { default as Conversation } from "./domain.ts";
 import { ChatInformation } from "./types/exposed.ts";
 import { tryCatch } from "./types/internal.ts";
-import { process } from "./validators.ts";
+import { process, retrieveConversation } from "./validators.ts";
 
 export function initWebsocket(wss: WebSocketServer) {
-
   wss.on("connection", (ws, req) => {
     console.log(`WebSocket connection established on context : ${req.url}`);
     let conversation: Conversation | undefined;
 
     if (req.url?.includes("/chat")) {
-      // TODO - this should be moved in validators.ts
       const uuid: string | undefined = req.url.split("uuid=").splice(1).pop();
 
-      if (!uuid) conversation = Conversation.new();
-      else if (uuid.length > 0 && Conversation.exists(uuid))
-        conversation = Conversation.load(uuid)!;
-      else {
-        ws.close(1002, `Invalid chat UUID: ${uuid}`);
-        return;
-      }
-      const info: ChatInformation = {
-        uuid: conversation.uuid,
-        messages: conversation.messages.map((m) => JSON.stringify(m.content)),
-      };
-      ws.send(JSON.stringify(info));
+      conversation = retrieveConversation(uuid).match(
+        (error) => {
+          ws.close(1002, JSON.stringify(error));
+          return undefined;
+        },
+        (conversation) => {
+          const info: ChatInformation = {
+            uuid: conversation.uuid,
+            messages: conversation.messages.map((m) =>
+              JSON.stringify(m.content)
+            ),
+          };
+          ws.send(JSON.stringify(info));
+          return conversation;
+        }
+      );
 
       ws.on("message", async (message) => {
         console.assert(conversation !== undefined);
