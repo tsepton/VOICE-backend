@@ -29,7 +29,7 @@ export function initWebsocket(wss: WebSocketServer) {
         }
       );
 
-      ws.on("message", async (message) => {
+      ws.on("question", async (message) => {
         console.assert(conversation !== undefined);
         (await tryCatch(() => JSON.parse(message.toString()))).match(
           (error) => ws.send(JSON.stringify(error)),
@@ -46,6 +46,20 @@ export function initWebsocket(wss: WebSocketServer) {
           }
         );
       });
+
+      ws.on("monitor", async (message) => {
+        console.assert(conversation !== undefined);
+        (await tryCatch(() => JSON.parse(message.toString()))).match(
+          (error) => ws.send(JSON.stringify(error)),
+          async (point) => {
+            (await tryCatch(() => conversation!.addMonitoringData(point))).match(
+              (error) => ws.send(JSON.stringify(error)),
+              (answer) => ws.send(JSON.stringify(answer)) // TODO - define answer
+            );
+          }
+        );
+      });
+
     } else ws.close(1002, "Invalid URL context");
 
     ws.on("close", () => {

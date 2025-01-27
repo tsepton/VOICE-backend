@@ -1,4 +1,4 @@
-import { BaseMessage } from "@langchain/core/messages";
+import { BaseMessage, HumanMessage } from "@langchain/core/messages";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import defaultAgent, { Agent, getAgent } from "./libs/agent/agent.ts";
@@ -61,6 +61,35 @@ export default class Conversation {
 
     const lastMessage = this._messages[this._messages.length - 1];
     return lastMessage.content as string;
+  }
+
+  addMonitoringData(data: any): void { // should be a defined type shared with frontend 
+
+
+    // TODO - not sure we will use the heatmap representation
+    // const images = [data.original, data.heatmap].map((uri) => ({
+    //   type: "image_url",
+    //   image_url: {
+    //     url: uri,
+    //   },
+    // }));
+
+    const updatedQuery = [
+      `Screenshot of user's view provided to give you context for future queries.`,
+    ].join("\n\n");
+
+
+    const message = new HumanMessage({
+          content: [
+            {
+              type: "text",
+              text: updatedQuery,
+            },
+            // ...images,
+          ],
+        });
+
+    this._messages.push(message); // TODO
   }
 
   public saveOnDisk(): void {
