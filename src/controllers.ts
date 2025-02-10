@@ -29,7 +29,7 @@ export function initWebsocket(wss: WebSocketServer) {
         }
       );
 
-      ws.on("question", async (message) => {
+      ws.on("message", async (message) => {
         console.assert(conversation !== undefined);
         (await tryCatch(() => JSON.parse(message.toString()))).match(
           (error) => ws.send(JSON.stringify(error)),
@@ -47,6 +47,7 @@ export function initWebsocket(wss: WebSocketServer) {
         );
       });
 
+      // fixme - this is a type of message - don't know what exactly I was expecting when writing this
       ws.on("monitor", async (message) => {
         console.assert(conversation !== undefined);
         (await tryCatch(() => JSON.parse(message.toString()))).match(
