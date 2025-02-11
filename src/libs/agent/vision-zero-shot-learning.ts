@@ -29,7 +29,9 @@ export abstract class BaseZeroShotLearning implements Agent {
 
     const updatedQuery = [
       `The user asked "${query}" `,
-      `To help you answer this question, use the two images below. `,
+      `To help you answer this question, you may need `,
+      `1. to use the two images below, `,
+      `2. or/and to use chat history. `,
     ].join("\n\n");
 
     const previous = history.length

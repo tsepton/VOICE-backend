@@ -9,7 +9,7 @@ export default class OpenAIAgent extends BaseZeroShotLearning {
       "Use the provided images as context to answer the question. " +
       "You should answer this question in one sentence. " + 
       "Do not describe the image, answer the question. ",
-      "As part of your answer, include a short explanation. " + 
+      // "As part of your answer, include a short explanation. " + 
       "Even if you do not have enough information or an exact answer " +
       "is unknown, you should do your best to provide an estimate " +
       "or a range of possible answers." + 
