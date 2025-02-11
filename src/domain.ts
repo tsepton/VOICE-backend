@@ -3,6 +3,7 @@ import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import defaultAgent, { Agent, getAgent } from "./libs/agent/agent.ts";
 import Heatmap from "./libs/gaze/heatmap.ts";
+import { Answer } from "./types/exposed.ts";
 import { ProcessedQuestion } from "./types/internal.ts";
 
 export default class Conversation {
@@ -38,7 +39,7 @@ export default class Conversation {
     this._messages = messages;
   }
 
-  async ask(question: ProcessedQuestion): Promise<string> {
+  async ask(question: ProcessedQuestion): Promise<Answer> {
     const timestamp = Date.now();
     const { query, gaze, image } = question;
 
@@ -60,7 +61,8 @@ export default class Conversation {
     console.timeEnd(`llm generation ${timestamp}`);
 
     const lastMessage = this._messages[this._messages.length - 1];
-    return lastMessage.content as string;
+    const text = lastMessage.content as string;
+    return { text, type : "answer" };
   }
 
   addMonitoringData(data: any): void { // should be a defined type shared with frontend 

@@ -11,9 +11,19 @@ export const QuestionSchema = z.object({
   image: z.string().trim().min(1, { message: "Required" }),
   gaze: z.array(StarePointSchema),
 });
+
 export type Question = z.infer<typeof QuestionSchema>;
 
-export interface ChatInformation {
+export interface Message {
+  type: string;
+}
+
+export interface ConversationInfo extends Message {
+  type: "info";
   uuid: string;
-  messages: string[];
+}
+
+export interface Answer extends Message{
+  type: "answer";
+  text: string;
 }

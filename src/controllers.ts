@@ -1,6 +1,6 @@
 import { WebSocketServer } from "ws";
 import { default as Conversation } from "./domain.ts";
-import { ChatInformation } from "./types/exposed.ts";
+import { ConversationInfo } from "./types/exposed.ts";
 import { tryCatch } from "./types/internal.ts";
 import { process, retrieveConversation } from "./validators.ts";
 
@@ -18,11 +18,9 @@ export function initWebsocket(wss: WebSocketServer) {
           return undefined;
         },
         (conversation) => {
-          const info: ChatInformation = {
+          const info: ConversationInfo = {
             uuid: conversation.uuid,
-            messages: conversation.messages.map((m) =>
-              JSON.stringify(m.content)
-            ),
+            type: "info",
           };
           ws.send(JSON.stringify(info));
           return conversation;
