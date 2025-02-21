@@ -15,7 +15,7 @@ import {
   ProcessedQuestion,
 } from "./types/internal.ts";
 
-export async function process(
+export async function processQuestion(
   body: Question
 ): Promise<Either<HttpClientError, ProcessedQuestion>> {
   const parsedBody = QuestionSchema.safeParse(body);

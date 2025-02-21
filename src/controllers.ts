@@ -2,7 +2,7 @@ import { WebSocketServer } from "ws";
 import { default as Conversation } from "./domain.ts";
 import { ConversationInfo } from "./types/exposed.ts";
 import { tryCatch } from "./types/internal.ts";
-import { process, retrieveConversation } from "./validators.ts";
+import { processQuestion, retrieveConversation } from "./validators.ts";
 
 export function initWebsocket(wss: WebSocketServer) {
   wss.on("connection", (ws, req) => {
@@ -32,7 +32,7 @@ export function initWebsocket(wss: WebSocketServer) {
         (await tryCatch(() => JSON.parse(message.toString()))).match(
           (error) => ws.send(JSON.stringify(error)),
           async (question) => {
-            (await process(question)).match(
+            (await processQuestion(question)).match(
               (error) => ws.send(JSON.stringify(error)),
               async (question) => {
                 (await tryCatch(() => conversation!.ask(question))).match(
@@ -46,18 +46,19 @@ export function initWebsocket(wss: WebSocketServer) {
       });
 
       // fixme - this is a type of message - don't know what exactly I was expecting when writing this
-      ws.on("monitor", async (message) => {
-        console.assert(conversation !== undefined);
-        (await tryCatch(() => JSON.parse(message.toString()))).match(
-          (error) => ws.send(JSON.stringify(error)),
-          async (point) => {
-            (await tryCatch(() => conversation!.addMonitoringData(point))).match(
-              (error) => ws.send(JSON.stringify(error)),
-              (answer) => ws.send(JSON.stringify(answer)) // TODO - define answer
-            );
-          }
-        );
-      });
+      // Will be implemented within #
+      // ws.on("monitor", async (message) => {
+      //   console.assert(conversation !== undefined);
+      //   (await tryCatch(() => JSON.parse(message.toString()))).match(
+      //     (error) => ws.send(JSON.stringify(error)),
+      //     async (point) => {
+      //       (await tryCatch(() => conversation!.addMonitoringData(point))).match(
+      //         (error) => ws.send(JSON.stringify(error)),
+      //         (answer) => ws.send(JSON.stringify(answer)) // TODO - define answer
+      //       );
+      //     }
+      //   );
+      // });
 
     } else ws.close(1002, "Invalid URL context");
 
