@@ -1,80 +1,41 @@
-import { Express, json, Request, urlencoded } from "express";
 import { WebSocketServer } from "ws";
-import * as domain from "./domain.ts";
-import { Question } from "./types/exposed.ts";
+import { default as Conversation } from "./domain.ts";
+import { ConversationInfo } from "./types/exposed.ts";
 import { tryCatch } from "./types/internal.ts";
-import { process } from "./validators.ts";
-
-export function initHttp(app: Express) {
-  // Configurations
-  app.use(json({ limit: "200mb" }));
-  app.use(urlencoded({ extended: true, limit: "200mb" }));
-
-  // Middlewares
-  app.use((req, res, next) => {
-    console.log(`Route accessed: ${req.method} ${req.originalUrl}`);
-    next();
-  });
-
-  app.use((req, res, next) => {
-    res.on("finish", () => {
-      console.log(
-        `Response sent: ${req.method} ${req.originalUrl} - Status: ${res.statusCode}`
-      );
-    });
-    next();
-  });
-
-  // Routes
-  app.get("/status", (_, res) => {
-    res.status(200).json({ message: "alive" });
-  });
-
-  app.post("/question", async (req: Request<Question>, res) => {
-    (await process(req?.body)).match(
-      (error) => {
-        res.status(error.code).json(error);
-      },
-      async (question) => {
-        (await tryCatch(() => domain.askWithHeatmap(question))).match(
-          (error) => res.status(error.code).json(error),
-          (answer) => res.status(200).json({ answer })
-        );
-      }
-    );
-  });
-
-  app.post("/question-temp", async (req: Request<Question>, res) => {
-    (await process(req?.body)).match(
-      (error) => {
-        res.status(error.code).json(error);
-      },
-      async (question) => {
-        (await tryCatch(() => domain.askWithTextDescription(question))).match(
-          (error) => res.status(error.code).json(error),
-          (answer) => res.status(200).json({ answer })
-        );
-      }
-    );
-  });
-}
+import { processQuestion, retrieveConversation } from "./validators.ts";
 
 export function initWebsocket(wss: WebSocketServer) {
   wss.on("connection", (ws, req) => {
-    console.log(`WebSocket connection established on ${req.url}`);
+    console.log(`WebSocket connection established on context : ${req.url}`);
+    let conversation: Conversation | undefined;
 
-    if (req.url === "/status") ws.send(JSON.stringify({ message: "alive" }));
-    else if (req.url === "/question") {
+    if (req.url?.includes("/chat")) {
+      const uuid: string | undefined = req.url.split("uuid=").splice(1).pop();
+
+      conversation = retrieveConversation(uuid).match(
+        (error) => {
+          ws.close(1002, JSON.stringify(error));
+          return undefined;
+        },
+        (conversation) => {
+          const info: ConversationInfo = {
+            uuid: conversation.uuid,
+            type: "info",
+          };
+          ws.send(JSON.stringify(info));
+          return conversation;
+        }
+      );
+
       ws.on("message", async (message) => {
-        console.log(`Websocket message received on ${req.url}:`, message);
-
+        console.assert(conversation !== undefined);
         (await tryCatch(() => JSON.parse(message.toString()))).match(
           (error) => ws.send(JSON.stringify(error)),
           async (question) => {
-            (await process(question)).match(
+            (await processQuestion(question)).match(
               (error) => ws.send(JSON.stringify(error)),
               async (question) => {
-                (await tryCatch(() => domain.askWithHeatmap(question))).match(
+                (await tryCatch(() => conversation!.ask(question))).match(
                   (error) => ws.send(JSON.stringify(error)),
                   (answer) => ws.send(JSON.stringify(answer))
                 );
@@ -83,10 +44,26 @@ export function initWebsocket(wss: WebSocketServer) {
           }
         );
       });
-    }
+
+      // fixme - this is a type of message - don't know what exactly I was expecting when writing this
+      // Will be implemented within #
+      // ws.on("monitor", async (message) => {
+      //   console.assert(conversation !== undefined);
+      //   (await tryCatch(() => JSON.parse(message.toString()))).match(
+      //     (error) => ws.send(JSON.stringify(error)),
+      //     async (point) => {
+      //       (await tryCatch(() => conversation!.addMonitoringData(point))).match(
+      //         (error) => ws.send(JSON.stringify(error)),
+      //         (answer) => ws.send(JSON.stringify(answer)) // TODO - define answer
+      //       );
+      //     }
+      //   );
+      // });
+
+    } else ws.close(1002, "Invalid URL context");
 
     ws.on("close", () => {
-      console.log(`WebSocket connection closed on ${req.url}`);
+      conversation?.saveOnDisk();
     });
   });
 }

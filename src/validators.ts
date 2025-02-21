@@ -1,4 +1,5 @@
 import { Image, loadImage } from "canvas";
+import { default as Conversation } from "./domain.ts";
 import {
   BadRequestError,
   HttpClientError,
@@ -14,11 +15,9 @@ import {
   ProcessedQuestion,
 } from "./types/internal.ts";
 
-export async function process(
-  body: Question 
+export async function processQuestion(
+  body: Question
 ): Promise<Either<HttpClientError, ProcessedQuestion>> {
-
-
   const parsedBody = QuestionSchema.safeParse(body);
   if (!parsedBody.success)
     return createLeft(
@@ -66,4 +65,15 @@ function processGaze(gaze: StarePoint[]): AggregatedStarePoint[] {
     value: 100,
     radius: 250,
   }));
+}
+
+export function retrieveConversation(
+  uuid: string | undefined
+): Either<HttpClientError, Conversation> {
+  if (!uuid) return createRight(Conversation.new());
+  else if (uuid.length > 0 && Conversation.exists(uuid))
+    return createRight(Conversation.load(uuid)!);
+  else {
+    return createLeft(new BadRequestError("Conversation does not exist."));
+  }
 }
