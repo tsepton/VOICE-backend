@@ -43,6 +43,13 @@ export default class Conversation {
     const timestamp = Date.now();
     const { query, gaze, image } = question;
 
+
+    this._agent.addTool("getWeather", "Get the weather of a given place", async (place: string) => {
+      
+      console.log("\n \n \n tool was called ! !\n\n\n");
+      return place + " is sunny";
+    });
+
     // Gaze representation generation
     console.time(`gaze generation ${timestamp}`);
     const gazeRepresentation = new Heatmap(image);

@@ -4,6 +4,7 @@ import {
   HumanMessage,
   SystemMessage,
 } from "@langchain/core/messages";
+import { DynamicTool } from "@langchain/core/tools";
 import { Agent } from "./agent.ts";
 
 export abstract class BaseZeroShotLearning implements Agent {
@@ -13,6 +14,14 @@ export abstract class BaseZeroShotLearning implements Agent {
   protected abstract _llm: BaseChatModel;
 
   protected abstract _system: string;
+
+  protected abstract _tools: DynamicTool[];
+  
+  public abstract addTool(
+    name: string,
+    description: string,
+    fn: (str: string) => Promise<string>
+  ): void;
 
   public async prompt(
     query: string,
@@ -28,10 +37,11 @@ export abstract class BaseZeroShotLearning implements Agent {
     }));
 
     const updatedQuery = [
-      `The user asked "${query}" `,
-      `To help you answer this question, you may need `,
-      `1. to use the two images below, `,
-      `2. or/and to use chat history. `,
+      `Question: "${query}" `,
+      // `The user asked "${query}" `,
+      // `To help you answer this question, you may need `,
+      // `1. to use the two images below, `,
+      // `2. or/and to use chat history. `,
     ].join("\n\n");
 
     const previous = history.length
@@ -52,7 +62,11 @@ export abstract class BaseZeroShotLearning implements Agent {
       ],
     });
 
-    const answer: BaseMessage = await this._llm.invoke([...previous, user]);
+    // const answer: BaseMessage = await this._llm.invoke([...previous, user]);    
+    const x = this._llm.bindTools!(this._tools ?? []);
+    const answer: BaseMessage = await (x).invoke([...previous, user]);    
+
+    console.log(answer);
 
     return [...previous, user, answer];
   }

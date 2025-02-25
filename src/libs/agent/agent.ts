@@ -15,6 +15,12 @@ export interface Agent {
     history: BaseMessage[]
   ) => Promise<BaseMessage[]>;
 
+  addTool: (
+    name: string,
+    description: string,
+    fn: (str: string) => Promise<string>
+  ) => void;
+
   readonly name: string;
 }
 
