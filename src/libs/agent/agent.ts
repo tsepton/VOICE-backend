@@ -1,4 +1,5 @@
 import { BaseMessage } from "@langchain/core/messages";
+import { RemoteExecutor } from "../executor/Executor.ts";
 import OllamaAssistant from "./ollama.ts";
 import OpenAIAgent from "./openai.ts";
 
@@ -10,8 +11,7 @@ export interface Agent {
    */
   prompt: (
     query: string,
-    original: string,
-    withGaze: string,
+    images: Base64URLString[],
     history: BaseMessage[]
   ) => Promise<BaseMessage[]>;
 
@@ -27,15 +27,15 @@ export interface Agent {
 const defaultAgent =
   process.env.USE_LOCAL === "false" ? OpenAIAgent : OllamaAssistant;
 
-export function getAgent(name: string) {
+export function getAgent(name?: string) {
   switch (name) {
     case "OllamaAgent":
-      return new OllamaAssistant();
+      return new OllamaAssistant(new RemoteExecutor());
     case "OpenAIAgent":
-      return new OpenAIAgent();
+      return new OpenAIAgent(new RemoteExecutor());
     default:
       console.warn(`Agent ${name} not found, using default agent.`);
-      return new defaultAgent();
+      return new defaultAgent(new RemoteExecutor());
   }
 }
 

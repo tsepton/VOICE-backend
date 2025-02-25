@@ -1,7 +1,7 @@
 import { BaseMessage, HumanMessage } from "@langchain/core/messages";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import defaultAgent, { Agent, getAgent } from "./libs/agent/agent.ts";
+import { Agent, getAgent } from "./libs/agent/agent.ts";
 import Heatmap from "./libs/gaze/heatmap.ts";
 import { Answer } from "./types/exposed.ts";
 import { ProcessedQuestion } from "./types/internal.ts";
@@ -16,7 +16,7 @@ export default class Conversation {
   public static load(uuid: string): Conversation {
     if (!this.exists(uuid)) throw new Error("Invalid UUID");
 
-    const file = fs.readFileSync(`generated/${uuid}.json`, 'utf8');
+    const file = fs.readFileSync(`generated/${uuid}.json`, "utf8");
     const { agent: agentName, messages }: ConversationTxt = JSON.parse(file);
 
     console.log(`${uuid} loaded.`);
@@ -26,7 +26,7 @@ export default class Conversation {
   public static new(): Conversation {
     const uuid = uuidv4();
     if (this.exists(uuid)) return this.new();
-    else return new Conversation(uuid, new defaultAgent(), []);
+    else return new Conversation(uuid, getAgent(), []);
   }
 
   public static exists(uuid: string): boolean {
@@ -43,12 +43,15 @@ export default class Conversation {
     const timestamp = Date.now();
     const { query, gaze, image } = question;
 
-
-    this._agent.addTool("getWeather", "Get the weather of a given place", async (place: string) => {
-      
-      console.log("\n \n \n tool was called ! !\n\n\n");
-      return place + " is sunny";
-    });
+    // TODO : This should set by the client - keeping it for debugging for now
+    this._agent.addTool(
+      "getWeather",
+      "Get the weather of a given place",
+      async (place: string) => {
+        console.log("\n \n \n tool was called ! !\n\n\n");
+        return place + " is sunny";
+      }
+    );
 
     // Gaze representation generation
     console.time(`gaze generation ${timestamp}`);
@@ -61,19 +64,18 @@ export default class Conversation {
     console.time(`llm generation ${timestamp}`);
     this._messages = await this._agent.prompt(
       query,
-      original,
-      gazeRepresentation.get("jpeg"),
+      [original, gazeRepresentation.get("jpeg")],
       this._messages
     );
     console.timeEnd(`llm generation ${timestamp}`);
 
     const lastMessage = this._messages[this._messages.length - 1];
     const text = lastMessage.content as string;
-    return { text, type : "answer" };
+    return { text, type: "answer" };
   }
 
-  addMonitoringData(data: any): void { // should be a defined type shared with frontend 
-
+  addMonitoringData(data: any): void {
+    // should be a defined type shared with frontend
 
     // TODO - not sure we will use the heatmap representation
     // const images = [data.original, data.heatmap].map((uri) => ({
@@ -87,16 +89,15 @@ export default class Conversation {
       `Screenshot of user's view provided to give you context for future queries.`,
     ].join("\n\n");
 
-
     const message = new HumanMessage({
-          content: [
-            {
-              type: "text",
-              text: updatedQuery,
-            },
-            // ...images,
-          ],
-        });
+      content: [
+        {
+          type: "text",
+          text: updatedQuery,
+        },
+        // ...images,
+      ],
+    });
 
     this._messages.push(message); // TODO
   }
