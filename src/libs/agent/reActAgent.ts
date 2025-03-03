@@ -8,7 +8,7 @@ import {
 } from "@langchain/core/messages";
 import { ToolCall } from "@langchain/core/messages/tool";
 import { DynamicTool } from "@langchain/core/tools";
-import { Executor } from "../executor/Executor.ts";
+import { Executor } from "../executor/executor.ts";
 import { Agent } from "./agent.ts";
 
 export abstract class ReActAgent implements Agent {

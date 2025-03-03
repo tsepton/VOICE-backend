@@ -1,6 +1,6 @@
 // import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI } from "@langchain/openai";
-import { ReActAgent } from "./ReActAgent.ts";
+import { ReActAgent } from "./reActAgent.ts";
 
 export default class OpenAIAgent extends ReActAgent {
   protected _executor: any;

@@ -1,5 +1,5 @@
 import { ChatOllama } from "@langchain/ollama";
-import { ReActAgent } from "./ReActAgent.ts";
+import { ReActAgent } from "./reActAgent.ts";
 
 export default class OllamaAgent extends ReActAgent {
 

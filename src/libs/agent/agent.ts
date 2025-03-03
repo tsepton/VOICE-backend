@@ -1,5 +1,5 @@
 import { BaseMessage } from "@langchain/core/messages";
-import { RemoteExecutor } from "../executor/Executor.ts";
+import { RemoteExecutor } from "../executor/remote.ts";
 import OllamaAssistant from "./ollama.ts";
 import OpenAIAgent from "./openai.ts";
 
