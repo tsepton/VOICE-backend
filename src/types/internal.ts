@@ -1,21 +1,45 @@
 import { Image } from "canvas";
 import { InternalServerError } from "./errors.ts";
 
-export interface AggregatedStarePoint {
+
+export interface ProcessedInput {}
+
+export interface AggregatedStarePoint extends ProcessedInput {
   x: number;
   y: number;
   radius: number;
   value: number;
 }
 
-export interface ProcessedQuestion {
+export interface ProcessedQuestion extends ProcessedInput {
   query: string;
   image: Image;
   gaze: AggregatedStarePoint[];
 }
 
+export interface ProcessedMonitoringData extends ProcessedInput {
+  // TODO: Define the monitoring data in accordance with the exposed schema
+}
+
 export abstract class Either<L, R> {
   abstract match<T>(onLeft: (left: L) => T, onRight: (right: R) => T): T;
+
+  isLeft(): this is Left<L, R> {
+    return this instanceof Left;
+  }
+
+  isRight(): this is Right<L, R> {
+    return this instanceof Right;
+  }
+
+  get value(): R {
+    return this.match(
+      () => {
+        throw new Error("Tried to get value of Left");
+      },
+      (right) => right
+    );
+  }
 }
 
 export class Left<L, R> extends Either<L, R> {
@@ -49,6 +73,7 @@ export function createRight<L, R>(right: R): Either<L, R> {
 export function tryCatch<T>(
   fn: () => T | Promise<T>
 ): Promise<Either<InternalServerError, T>>;
+
 export async function tryCatch<R>(
   fn: () => Promise<R>
 ): Promise<Either<InternalServerError, R>> {

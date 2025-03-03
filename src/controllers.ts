@@ -1,11 +1,19 @@
-import { WebSocketServer } from "ws";
+import { IncomingMessage } from "http";
+import { WebSocket, WebSocketServer } from "ws";
 import { default as Conversation } from "./domain.ts";
-import { ConversationInfo } from "./types/exposed.ts";
-import { tryCatch } from "./types/internal.ts";
-import { processQuestion, retrieveConversation } from "./validators.ts";
+import { HttpClientError } from "./types/errors.ts";
+import { BaseMessage, ConversationInfo } from "./types/exposed.ts";
+import {
+  Either,
+  ProcessedInput,
+  ProcessedMonitoringData,
+  ProcessedQuestion,
+  tryCatch,
+} from "./types/internal.ts";
+import { process, retrieveConversation } from "./validators.ts";
 
 export function initWebsocket(wss: WebSocketServer) {
-  wss.on("connection", (ws, req) => {
+  wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     console.log(`WebSocket connection established on context : ${req.url}`);
     let conversation: Conversation | undefined;
 
@@ -31,39 +39,59 @@ export function initWebsocket(wss: WebSocketServer) {
         console.assert(conversation !== undefined);
         (await tryCatch(() => JSON.parse(message.toString()))).match(
           (error) => ws.send(JSON.stringify(error)),
-          async (question) => {
-            (await processQuestion(question)).match(
-              (error) => ws.send(JSON.stringify(error)),
-              async (question) => {
-                (await tryCatch(() => conversation!.ask(question))).match(
-                  (error) => ws.send(JSON.stringify(error)),
-                  (answer) => ws.send(JSON.stringify(answer))
-                );
-              }
-            );
-          }
+          (json) => handleMessage(json, conversation!, ws)
         );
       });
-
-      // fixme - this is a type of message - don't know what exactly I was expecting when writing this
-      // Will be implemented within #
-      // ws.on("monitor", async (message) => {
-      //   console.assert(conversation !== undefined);
-      //   (await tryCatch(() => JSON.parse(message.toString()))).match(
-      //     (error) => ws.send(JSON.stringify(error)),
-      //     async (point) => {
-      //       (await tryCatch(() => conversation!.addMonitoringData(point))).match(
-      //         (error) => ws.send(JSON.stringify(error)),
-      //         (answer) => ws.send(JSON.stringify(answer)) // TODO - define answer
-      //       );
-      //     }
-      //   );
-      // });
-
     } else ws.close(1002, "Invalid URL context");
 
     ws.on("close", () => {
       conversation?.saveOnDisk();
     });
   });
+}
+
+async function ask(
+  question: ProcessedQuestion,
+  conversation: Conversation,
+  ws: WebSocket
+) {
+  (await tryCatch(() => conversation!.ask(question))).match(
+    (error) => ws.send(JSON.stringify(error)),
+    (answer) => ws.send(JSON.stringify(answer))
+  );
+}
+
+async function monitor(
+  data: ProcessedMonitoringData,
+  conversation: Conversation,
+  ws: WebSocket
+) {
+  (await tryCatch(() => conversation!.addMonitoringData(data))).match(
+    (error) => ws.send(JSON.stringify(error)),
+    (answer) => ws.send(JSON.stringify(answer))
+  );
+}
+
+async function handleMessage(
+  json: BaseMessage,
+  conversation: Conversation,
+  ws: WebSocket
+) {
+  const processedInput: Either<HttpClientError, ProcessedInput> =
+    await process(json);
+
+  if (processedInput.isLeft()) {
+    ws.send(JSON.stringify(processedInput.left));
+    return;
+  }
+
+  const data = processedInput.value;
+  switch (json.type) {
+    case "question":
+      ask(data as ProcessedQuestion, conversation, ws);
+      break;
+    case "monitoring":
+      monitor(data as ProcessedMonitoringData, conversation, ws);
+      break;
+  }
 }

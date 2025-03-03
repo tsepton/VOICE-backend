@@ -1,4 +1,5 @@
 import { Image, loadImage } from "canvas";
+import { ZodSchema } from "zod";
 import { default as Conversation } from "./domain.ts";
 import {
   BadRequestError,
@@ -6,26 +7,55 @@ import {
   UnprocessableContentError,
   UnsupportedMediaTypeError,
 } from "./types/errors.ts";
-import { Question, QuestionSchema, StarePoint } from "./types/exposed.ts";
+import {
+  BaseMessage,
+  BaseMessageSchema,
+  MonitoringSchema,
+  QuestionSchema,
+  StarePoint
+} from "./types/exposed.ts";
 import {
   AggregatedStarePoint,
   createLeft,
   createRight,
   Either,
+  Left,
+  ProcessedInput,
+  ProcessedMonitoringData,
   ProcessedQuestion,
 } from "./types/internal.ts";
 
-export async function processQuestion(
-  body: Question
+
+export async function process(
+  body: BaseMessage,
+): Promise<Either<HttpClientError, ProcessedInput>> {
+  const parsed = safeParse(BaseMessageSchema, body);
+  if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
+
+  let operation = body.type;
+  let processedInput: Either<HttpClientError, ProcessedInput>;
+
+  switch (operation) {
+    case "question":
+      processedInput = await processQuestion(body);
+      break;
+    case "monitoring":
+      processedInput = await processMonitoringData(body);
+      break;
+  }
+
+  return processedInput;
+}
+
+
+
+async function processQuestion(
+  body: BaseMessage
 ): Promise<Either<HttpClientError, ProcessedQuestion>> {
-  const parsedBody = QuestionSchema.safeParse(body);
-  if (!parsedBody.success)
-    return createLeft(
-      new BadRequestError("Invalid body data types.", parsedBody.error)
-    );
+  const parsed = safeParse(QuestionSchema, body);
+  if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
 
-  const question = parsedBody.data;
-
+  const question = parsed.value;
   if (
     !question.image.startsWith("data:image/jpg;base64,") &&
     !question.image.startsWith("data:image/jpeg;base64,") &&
@@ -55,6 +85,27 @@ export async function processQuestion(
     image: image,
     gaze: gaze,
   });
+}
+
+async function processMonitoringData(
+  body: BaseMessage
+): Promise<Either<HttpClientError, ProcessedMonitoringData>> {
+  const parsed = safeParse(MonitoringSchema, body);
+  if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
+  // TODO: Implementation
+  return createRight({});
+}
+
+function safeParse<T>(
+  schema: ZodSchema<T>,
+  body: unknown
+): Either<HttpClientError, T> {
+  const parsedBody = schema.safeParse(body);
+  if (!parsedBody.success)
+    return createLeft(
+      new BadRequestError("Invalid body data types.", parsedBody.error)
+    );
+  return createRight(parsedBody.data);
 }
 
 function processGaze(gaze: StarePoint[]): AggregatedStarePoint[] {
