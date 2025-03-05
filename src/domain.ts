@@ -2,38 +2,55 @@ import { BaseMessage, HumanMessage } from "@langchain/core/messages";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { Agent, getAgent } from "./libs/agent/agent.ts";
+// import { RemoteExecutor } from "./libs/executor/remote.ts";
+import { ToolCall } from "@langchain/core/messages/tool";
 import Heatmap from "./libs/gaze/heatmap.ts";
 import { Answer } from "./types/exposed.ts";
-import { ProcessedQuestion } from "./types/internal.ts";
+import { ProcessedQuestion, ProcessedToolCallResult, UUID } from "./types/internal.ts";
 
-export default class Conversation {
-  public readonly uuid: string;
+
+
+export type RemoteExecution = (toolCall: ToolCall) => Promise<ProcessedToolCallResult>;
+
+export class Conversation {
+  public readonly uuid: UUID;
 
   private _agent: Agent;
 
   private _messages: BaseMessage[] = [];
 
-  public static load(uuid: string): Conversation {
+  // TODO : load new exists and saveOnDisk should be inherited and therefore separated
+  public static load(uuid: string, remoteExecution: RemoteExecution): Conversation {
     if (!this.exists(uuid)) throw new Error("Invalid UUID");
 
     const file = fs.readFileSync(`generated/${uuid}.json`, "utf8");
     const { agent: agentName, messages }: ConversationTxt = JSON.parse(file);
-
+    
     console.log(`${uuid} loaded.`);
-    return new Conversation(uuid, getAgent(agentName), messages);
+    return new Conversation(uuid, getAgent(remoteExecution, agentName), messages);
   }
 
-  public static new(): Conversation {
+  public static new(remoteExecution: RemoteExecution): Conversation {
     const uuid = uuidv4();
-    if (this.exists(uuid)) return this.new();
-    else return new Conversation(uuid, getAgent(), []);
+    if (this.exists(uuid)) return this.new(remoteExecution);
+    else return new Conversation(uuid, getAgent(remoteExecution), []);
   }
 
-  public static exists(uuid: string): boolean {
+  public static exists(uuid: UUID): boolean {
     return fs.existsSync(`generated/${uuid}.json`);
   }
 
-  private constructor(uuid: string, agent: Agent, messages: BaseMessage[]) {
+  public saveOnDisk(): void {
+    const directory = `generated`;
+    const file = `${directory}/${this.uuid}.json`;
+    if (!fs.existsSync(directory)) fs.mkdirSync(directory);
+    fs.writeFile(file, this.serialized, (err) => {
+      if (err) console.log(err);
+      else console.log(`${this.uuid} saved.`);
+    });
+  }
+
+  private constructor(uuid: UUID, agent: Agent, messages: BaseMessage[]) {
     this.uuid = uuid;
     this._agent = agent;
     this._messages = messages;
@@ -86,7 +103,7 @@ export default class Conversation {
     // }));
 
     const updatedQuery = [
-      `Screenshot of user's view provided to give you context for future queries.`,
+      `TODO.`,
     ].join("\n\n");
 
     const message = new HumanMessage({
@@ -102,17 +119,7 @@ export default class Conversation {
     this._messages.push(message); // TODO
   }
 
-  public saveOnDisk(): void {
-    const directory = `generated`;
-    const file = `${directory}/${this.uuid}.json`;
-    if (!fs.existsSync(directory)) fs.mkdirSync(directory);
-    fs.writeFile(file, this.txt, (err) => {
-      if (err) console.log(err);
-      else console.log(`${this.uuid} saved.`);
-    });
-  }
-
-  public get txt(): string {
+  public get serialized(): string {
     return JSON.stringify({
       uuid: this.uuid,
       agent: this._agent.name,

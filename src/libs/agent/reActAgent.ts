@@ -8,7 +8,7 @@ import {
 } from "@langchain/core/messages";
 import { ToolCall } from "@langchain/core/messages/tool";
 import { DynamicTool } from "@langchain/core/tools";
-import { Executor } from "../executor/executor.ts";
+import { RemoteExecution } from "../../domain.ts";
 import { Agent } from "./agent.ts";
 
 export abstract class ReActAgent implements Agent {
@@ -24,7 +24,7 @@ export abstract class ReActAgent implements Agent {
     return this._llm.bindTools!(this._tools ?? []);
   }
 
-  constructor(protected _executor: Executor) {}
+  constructor(protected _executor: RemoteExecution) {}
 
   public addTool(
     name: string,
@@ -59,10 +59,10 @@ export abstract class ReActAgent implements Agent {
       await Promise.all(
         answer.tool_calls.map(async (call: ToolCall) => {
           console.log(`Tool ${call.name} result loading...`);
-          return { call, output: await this._executor.run(call) };
+          return { call, output: await this._executor(call) };
         })
       )
-    ).map(({ call, output }) => new ToolMessage(output, call.id!, call.name));
+    ).map(({ call, output }) => new ToolMessage(output.value, call.id!, call.name));
 
     if (!outputs.length) throw new Error("No outputs from tools");
     return this.prompt(undefined, [], [...messages, answer, ...outputs]);

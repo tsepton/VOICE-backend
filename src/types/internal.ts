@@ -1,6 +1,7 @@
 import { Image } from "canvas";
 import { InternalServerError } from "./errors.ts";
 
+export type UUID = string;
 
 export interface ProcessedInput {}
 
@@ -19,6 +20,10 @@ export interface ProcessedQuestion extends ProcessedInput {
 
 export interface ProcessedMonitoringData extends ProcessedInput {
   // TODO: Define the monitoring data in accordance with the exposed schema
+}
+
+export interface ProcessedToolCallResult extends ProcessedInput {
+  value: string;
 }
 
 export abstract class Either<L, R> {

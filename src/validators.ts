@@ -1,6 +1,6 @@
 import { Image, loadImage } from "canvas";
 import { ZodSchema } from "zod";
-import { default as Conversation } from "./domain.ts";
+import { Conversation, RemoteExecution } from "./domain.ts";
 import {
   BadRequestError,
   HttpClientError,
@@ -12,7 +12,7 @@ import {
   BaseMessageSchema,
   MonitoringSchema,
   QuestionSchema,
-  StarePoint
+  StarePoint,
 } from "./types/exposed.ts";
 import {
   AggregatedStarePoint,
@@ -25,29 +25,23 @@ import {
   ProcessedQuestion,
 } from "./types/internal.ts";
 
-
 export async function process(
-  body: BaseMessage,
+  body: BaseMessage
 ): Promise<Either<HttpClientError, ProcessedInput>> {
   const parsed = safeParse(BaseMessageSchema, body);
   if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
 
   let operation = body.type;
-  let processedInput: Either<HttpClientError, ProcessedInput>;
 
   switch (operation) {
     case "question":
-      processedInput = await processQuestion(body);
-      break;
+      return await processQuestion(body);
     case "monitoring":
-      processedInput = await processMonitoringData(body);
-      break;
+      return await processMonitoringData(body);
+    case "tool_call_result":
+      throw new Error("Not implemented yet TODO");
   }
-
-  return processedInput;
 }
-
-
 
 async function processQuestion(
   body: BaseMessage
@@ -119,11 +113,12 @@ function processGaze(gaze: StarePoint[]): AggregatedStarePoint[] {
 }
 
 export function retrieveConversation(
-  uuid: string | undefined
+  uuid: string | undefined,
+  remoteExecution: RemoteExecution
 ): Either<HttpClientError, Conversation> {
-  if (!uuid) return createRight(Conversation.new());
+  if (!uuid) return createRight(Conversation.new(remoteExecution));
   else if (uuid.length > 0 && Conversation.exists(uuid))
-    return createRight(Conversation.load(uuid)!);
+    return createRight(Conversation.load(uuid, remoteExecution)!);
   else {
     return createLeft(new BadRequestError("Conversation does not exist."));
   }
