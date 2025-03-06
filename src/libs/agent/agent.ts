@@ -8,6 +8,8 @@ export interface Agent {
    * query : the user query
    * original : the original base64 string (with mimetype) jpg image
    * withGaze : the modified base64 string (with mimetype) jpg image that adds gaze data
+   * 
+   * Return value is the history with the generated response appended.
    */
   prompt: (
     query: string,

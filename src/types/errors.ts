@@ -1,3 +1,7 @@
+// The API has been reworked to use websockets instead of HTTP requests
+// Therefore, HTTP codes are legacy but won't be updated. 
+// The errors are still relevant for the API's internal communication and error handling.
+
 export type HttpError = {
   code: number;
   message: string;
@@ -15,6 +19,10 @@ abstract class BaseHttpClientError implements HttpClientError {
 
 export class BadRequestError extends BaseHttpClientError {
   code = 400;
+}
+
+export class RequestTimeout extends BaseHttpClientError {
+  code = 408;
 }
 
 export class UnsupportedMediaTypeError extends BaseHttpClientError {
