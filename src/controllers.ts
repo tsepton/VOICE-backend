@@ -3,17 +3,17 @@ import { IncomingMessage as HTTPIncomingMessage } from "http";
 import { v4 as uuidv4 } from "uuid";
 import { ServerOptions, WebSocket, WebSocketServer } from "ws";
 import { Conversation, RemoteExecution } from "./domain.ts";
-import { HttpClientError } from "./types/errors.ts";
+import { HttpClientError, RequestTimeout } from "./types/errors.ts";
 import {
   ClientToolCall,
   ConversationInfo,
   IncomingMessage,
   IncomingMessageType,
+  OutgoingMessage,
 } from "./types/exposed.ts";
 import {
   Either,
   ProcessedInput,
-  ProcessedMonitoringData,
   ProcessedQuestion,
   ProcessedToolCallResult,
   tryCatch,
@@ -71,9 +71,16 @@ export class VOICEServer<
 
       ws.on("message", async (message) => {
         console.assert(conversation !== undefined);
-        (await tryCatch(() => JSON.parse(message.toString()))).match(
+        (
+          await tryCatch(async () => {
+            const json = JSON.parse(message.toString());
+            return await this._handleMessage(json, conversation!, ws);
+          })
+        ).match(
           (error) => ws.send(JSON.stringify(error)),
-          (json) => this._handleMessage(json, conversation!, ws)
+          (answer: undefined | OutgoingMessage) => {
+            if (!!answer) ws.send(JSON.stringify(answer));
+          }
         );
       });
 
@@ -87,7 +94,7 @@ export class VOICEServer<
     json: IncomingMessage,
     conversation: Conversation,
     ws: WebSocket
-  ) {
+  ): Promise<OutgoingMessage | undefined> {
     const data: Either<HttpClientError, ProcessedInput> = await process(json);
 
     if (data.isLeft()) {
@@ -98,14 +105,9 @@ export class VOICEServer<
     const processedInput = data.value;
     switch (json.type) {
       case IncomingMessageType.QUESTION:
-        this._ask(processedInput as ProcessedQuestion, conversation, ws);
-        break;
+        return conversation!.ask(processedInput as ProcessedQuestion);
       case IncomingMessageType.MONITORING:
-        this._monitor(
-          processedInput as ProcessedMonitoringData,
-          conversation,
-          ws
-        );
+        conversation!.addMonitoringData(data);
         break;
       case IncomingMessageType.TOOL_CALL_RESULT:
         const { id } = processedInput as ProcessedToolCallResult;
@@ -114,28 +116,7 @@ export class VOICEServer<
         );
         break;
     }
-  }
-
-  private async _ask(
-    question: ProcessedQuestion,
-    conversation: Conversation,
-    ws: WebSocket
-  ) {
-    (await tryCatch(() => conversation!.ask(question))).match(
-      (error) => ws.send(JSON.stringify(error)),
-      (answer) => ws.send(JSON.stringify(answer))
-    );
-  }
-
-  private async _monitor(
-    data: ProcessedMonitoringData,
-    conversation: Conversation,
-    ws: WebSocket
-  ) {
-    (await tryCatch(() => conversation!.addMonitoringData(data))).match(
-      (error) => ws.send(JSON.stringify(error)),
-      (answer) => ws.send(JSON.stringify(answer))
-    );
+    return undefined;
   }
 
   private _remoteExecution(ws: WebSocket): RemoteExecution {
@@ -152,9 +133,12 @@ export class VOICEServer<
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           console.error(`Timeout for ${requestId}`);
-          reject(new Error(`Timeout for tool call ${requestId}`));
+          reject(new RequestTimeout(`Timeout for tool call ${requestId}`));
         }, 5000);
-        this._activeClientToolCalls[message.id] = resolve;
+        this._activeClientToolCalls[message.id] = (result) => {
+          clearTimeout(timeout);
+          resolve(result);
+        };
         ws.send(JSON.stringify(message));
       });
     };

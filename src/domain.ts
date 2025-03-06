@@ -6,7 +6,7 @@ import { Agent, getAgent } from "./libs/agent/agent.ts";
 import { ToolCall } from "@langchain/core/messages/tool";
 import Heatmap from "./libs/gaze/heatmap.ts";
 import { Answer } from "./types/exposed.ts";
-import { ProcessedQuestion, ProcessedToolCallResult, UUID } from "./types/internal.ts";
+import { ProcessedMonitoringData, ProcessedQuestion, ProcessedToolCallResult, UUID } from "./types/internal.ts";
 
 
 
@@ -91,7 +91,7 @@ export class Conversation {
     return { text, type: "answer" };
   }
 
-  addMonitoringData(data: any): void {
+  addMonitoringData(data: ProcessedMonitoringData): void {
     // should be a defined type shared with frontend
 
     // TODO - not sure we will use the heatmap representation
