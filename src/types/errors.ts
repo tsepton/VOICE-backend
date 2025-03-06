@@ -1,50 +1,50 @@
 // The API has been reworked to use websockets instead of HTTP requests
-// Therefore, HTTP codes are legacy but won't be updated. 
-// The errors are still relevant for the API's internal communication and error handling.
+// Therefore, codes are derived from HTTP documentation but newer may also differ. 
+// There is no guarantee that the error codes are the same as the HTTP codes.
 
-export type HttpError = {
+export interface CommunicationError {
   code: number;
   message: string;
 };
 
-// Errors 400
-export interface HttpClientError extends HttpError {
+// Errors emanating from the client side
+export interface ClientError extends CommunicationError {
   code: number;
 }
 
-abstract class BaseHttpClientError implements HttpClientError {
+export abstract class BaseClientError implements ClientError {
   abstract code: number;
   constructor(public message: string, public info: any = undefined) {}
 }
 
-export class BadRequestError extends BaseHttpClientError {
+export class BadRequestError extends BaseClientError {
   code = 400;
 }
 
-export class RequestTimeout extends BaseHttpClientError {
+export class RequestTimeout extends BaseClientError {
   code = 408;
 }
 
-export class UnsupportedMediaTypeError extends BaseHttpClientError {
+export class UnsupportedMediaTypeError extends BaseClientError {
   code = 415;
 }
 
-export class UnprocessableContentError extends BaseHttpClientError {
+export class UnprocessableContentError extends BaseClientError {
   code = 422;
 }
 
-// Errors 500
-export interface HttpServerError extends HttpError {
+// Errors emanating from the server side
+export interface ServerError extends CommunicationError {
   code: number;
 }
 
-abstract class BaseHttpServerError extends Error implements HttpClientError  {
+export abstract class BaseServerError extends Error implements ClientError  {
   abstract code: number;
   constructor(public message: string, public info: any = undefined) {
     super();
   }
 }
 
-export class InternalServerError extends BaseHttpServerError {
+export class InternalServerError extends BaseServerError {
   code = 500;
 }

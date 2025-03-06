@@ -3,7 +3,7 @@ import { IncomingMessage as HTTPIncomingMessage } from "http";
 import { v4 as uuidv4 } from "uuid";
 import { ServerOptions, WebSocket, WebSocketServer } from "ws";
 import { Conversation, RemoteExecution } from "./domain.ts";
-import { HttpClientError, RequestTimeout } from "./types/errors.ts";
+import { ClientError, RequestTimeout } from "./types/errors.ts";
 import {
   ClientToolCall,
   ConversationInfo,
@@ -95,7 +95,7 @@ export class VOICEServer<
     conversation: Conversation,
     ws: WebSocket
   ): Promise<OutgoingMessage | undefined> {
-    const data: Either<HttpClientError, ProcessedInput> = await process(json);
+    const data: Either<ClientError, ProcessedInput> = await process(json);
 
     if (data.isLeft()) {
       ws.send(JSON.stringify(data.left));
@@ -116,7 +116,7 @@ export class VOICEServer<
         );
         break;
     }
-    return undefined;
+    return;
   }
 
   private _remoteExecution(ws: WebSocket): RemoteExecution {

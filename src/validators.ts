@@ -3,7 +3,8 @@ import { ZodSchema } from "zod";
 import { Conversation, RemoteExecution } from "./domain.ts";
 import {
   BadRequestError,
-  HttpClientError,
+  ClientError,
+  CommunicationError,
   UnprocessableContentError,
   UnsupportedMediaTypeError,
 } from "./types/errors.ts";
@@ -30,9 +31,9 @@ import {
 
 export async function process(
   body: IncomingMessage
-): Promise<Either<HttpClientError, ProcessedInput>> {
+): Promise<Either<ClientError, ProcessedInput>> {
   const parsed = safeParse(IncomingMessageSchema, body);
-  if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
+  if (parsed.isLeft()) return parsed as Left<ClientError, any>;
 
   let operation = body.type;
 
@@ -48,9 +49,9 @@ export async function process(
 
 async function processQuestion(
   body: IncomingMessage
-): Promise<Either<HttpClientError, ProcessedQuestion>> {
+): Promise<Either<ClientError, ProcessedQuestion>> {
   const parsed = safeParse(QuestionSchema, body);
-  if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
+  if (parsed.isLeft()) return parsed as Left<ClientError, any>;
 
   const question = parsed.value;
   if (
@@ -86,18 +87,18 @@ async function processQuestion(
 
 async function processMonitoringData(
   body: IncomingMessage
-): Promise<Either<HttpClientError, ProcessedMonitoringData>> {
+): Promise<Either<ClientError, ProcessedMonitoringData>> {
   const parsed = safeParse(MonitoringSchema, body);
-  if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
+  if (parsed.isLeft()) return parsed as Left<ClientError, any>;
   // TODO: Implementation
   return createRight({});
 }
 
 async function processToolCallResult(
   body: IncomingMessage
-): Promise<Either<HttpClientError, ProcessedToolCallResult>> {
+): Promise<Either<ClientError, ProcessedToolCallResult>> {
   const parsed = safeParse(ToolCallResultSchema, body);
-  if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
+  if (parsed.isLeft()) return parsed as Left<ClientError, any>;
   // TODO: Implementation
   return createRight({ value: "TODO" });
 }
@@ -105,7 +106,7 @@ async function processToolCallResult(
 function safeParse<T>(
   schema: ZodSchema<T>,
   body: unknown
-): Either<HttpClientError, T> {
+): Either<ClientError, T> {
   const parsedBody = schema.safeParse(body);
   if (!parsedBody.success)
     return createLeft(
@@ -127,7 +128,7 @@ function processGaze(gaze: StarePoint[]): AggregatedStarePoint[] {
 export function retrieveConversation(
   uuid: string | undefined,
   remoteExecution: RemoteExecution
-): Either<HttpClientError, Conversation> {
+): Either<CommunicationError, Conversation> {
   if (!uuid) return createRight(Conversation.new(remoteExecution));
   else if (uuid.length > 0 && Conversation.exists(uuid))
     return createRight(Conversation.load(uuid, remoteExecution)!);

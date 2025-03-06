@@ -1,5 +1,10 @@
 import { Image } from "canvas";
-import { InternalServerError } from "./errors.ts";
+import {
+  BaseClientError,
+  BaseServerError,
+  CommunicationError,
+  InternalServerError,
+} from "./errors.ts";
 
 export type UUID = string;
 
@@ -78,11 +83,11 @@ export function createRight<L, R>(right: R): Either<L, R> {
 
 export function tryCatch<T>(
   fn: () => T | Promise<T>
-): Promise<Either<InternalServerError, T>>;
+): Promise<Either<CommunicationError, T>>;
 
 export async function tryCatch<R>(
   fn: () => Promise<R>
-): Promise<Either<InternalServerError, R>> {
+): Promise<Either<CommunicationError, R>> {
   try {
     const result = fn();
 
@@ -91,6 +96,8 @@ export async function tryCatch<R>(
     } else return createRight(result);
   } catch (e: unknown) {
     console.error(e);
-    return createLeft(new InternalServerError("Something went wrong.", e));
+    if (e instanceof BaseClientError) return createLeft(e);
+    if (e instanceof BaseServerError) return createLeft(e);
+    else return createLeft(new InternalServerError("Something went wrong."));
   }
 }
