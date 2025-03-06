@@ -1,13 +1,14 @@
 import { ToolCall } from "@langchain/core/messages/tool";
-import { IncomingMessage } from "http";
+import { IncomingMessage as HTTPIncomingMessage } from "http";
 import { v4 as uuidv4 } from "uuid";
 import { ServerOptions, WebSocket, WebSocketServer } from "ws";
 import { Conversation, RemoteExecution } from "./domain.ts";
 import { HttpClientError } from "./types/errors.ts";
 import {
-  BaseMessage,
   ClientToolCall,
-  ConversationInfo
+  ConversationInfo,
+  IncomingMessage,
+  IncomingMessageType,
 } from "./types/exposed.ts";
 import {
   Either,
@@ -15,16 +16,14 @@ import {
   ProcessedMonitoringData,
   ProcessedQuestion,
   tryCatch,
-  UUID
+  UUID,
 } from "./types/internal.ts";
 import { process, retrieveConversation } from "./validators.ts";
 
 export class VOICEServer<
   T extends typeof WebSocket.WebSocket = typeof WebSocket.WebSocket,
-  U extends typeof IncomingMessage = typeof IncomingMessage
+  U extends typeof HTTPIncomingMessage = typeof HTTPIncomingMessage
 > extends WebSocketServer {
-
-
   private _activeClientToolCalls: Record<UUID, (response: string) => void> = {};
 
   constructor(options?: ServerOptions<T, U>, callback?: () => void) {
@@ -32,7 +31,7 @@ export class VOICEServer<
   }
 
   public initWebsocket() {
-    this.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+    this.on("connection", (ws: WebSocket, req: HTTPIncomingMessage) => {
       console.log(`WebSocket connection established on context : ${req.url}`);
       let conversation: Conversation | undefined;
 
@@ -43,7 +42,10 @@ export class VOICEServer<
 
       const uuid: string | undefined = req.url.split("uuid=").splice(1).pop();
 
-      conversation = retrieveConversation(uuid, this._remoteExecution(ws)).match(
+      conversation = retrieveConversation(
+        uuid,
+        this._remoteExecution(ws)
+      ).match(
         (error) => {
           ws.close(1002, JSON.stringify(error));
           return undefined;
@@ -78,7 +80,7 @@ export class VOICEServer<
   }
 
   private async _handleMessage(
-    json: BaseMessage,
+    json: IncomingMessage,
     conversation: Conversation,
     ws: WebSocket
   ) {
@@ -92,13 +94,13 @@ export class VOICEServer<
 
     const data = processedInput.value;
     switch (json.type) {
-      case "question":
+      case IncomingMessageType.QUESTION:
         this._ask(data as ProcessedQuestion, conversation, ws);
         break;
-      case "monitoring":
+      case IncomingMessageType.MONITORING:
         this._monitor(data as ProcessedMonitoringData, conversation, ws);
         break;
-      case "tool_call_result":
+      case IncomingMessageType.TOOL_CALL_RESULT:
         const { id, output } = data as { id: UUID; output: string };
         // ws.send(JSON.stringify({ id, output }));
         break;
@@ -127,9 +129,7 @@ export class VOICEServer<
     );
   }
 
-  private _remoteExecution(
-    ws: WebSocket
-  ): RemoteExecution {
+  private _remoteExecution(ws: WebSocket): RemoteExecution {
     const requestId = uuidv4();
 
     const execution: RemoteExecution = (tool: ToolCall) => {
@@ -152,13 +152,11 @@ export class VOICEServer<
 
           // TODO response is a string and should be parsed and sanitized
 
-          resolve({value: response});
+          resolve({ value: response });
         };
-
 
         ws.once(`tool_call_result_${requestId}`, onResponse);
         ws.send(JSON.stringify(message));
-
       });
     };
     return execution;

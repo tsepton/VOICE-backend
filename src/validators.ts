@@ -8,11 +8,13 @@ import {
   UnsupportedMediaTypeError,
 } from "./types/errors.ts";
 import {
-  BaseMessage,
-  BaseMessageSchema,
+  IncomingMessage,
+  IncomingMessageSchema,
+  IncomingMessageType,
   MonitoringSchema,
   QuestionSchema,
   StarePoint,
+  ToolCallResultSchema,
 } from "./types/exposed.ts";
 import {
   AggregatedStarePoint,
@@ -23,28 +25,29 @@ import {
   ProcessedInput,
   ProcessedMonitoringData,
   ProcessedQuestion,
+  ProcessedToolCallResult,
 } from "./types/internal.ts";
 
 export async function process(
-  body: BaseMessage
+  body: IncomingMessage
 ): Promise<Either<HttpClientError, ProcessedInput>> {
-  const parsed = safeParse(BaseMessageSchema, body);
+  const parsed = safeParse(IncomingMessageSchema, body);
   if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
 
   let operation = body.type;
 
   switch (operation) {
-    case "question":
+    case IncomingMessageType.QUESTION:
       return await processQuestion(body);
-    case "monitoring":
+    case IncomingMessageType.MONITORING:
       return await processMonitoringData(body);
-    case "tool_call_result":
-      throw new Error("Not implemented yet TODO");
+    case IncomingMessageType.TOOL_CALL_RESULT:
+      return await processToolCallResult(body);
   }
 }
 
 async function processQuestion(
-  body: BaseMessage
+  body: IncomingMessage
 ): Promise<Either<HttpClientError, ProcessedQuestion>> {
   const parsed = safeParse(QuestionSchema, body);
   if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
@@ -82,12 +85,21 @@ async function processQuestion(
 }
 
 async function processMonitoringData(
-  body: BaseMessage
+  body: IncomingMessage
 ): Promise<Either<HttpClientError, ProcessedMonitoringData>> {
   const parsed = safeParse(MonitoringSchema, body);
   if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
   // TODO: Implementation
   return createRight({});
+}
+
+async function processToolCallResult(
+  body: IncomingMessage
+): Promise<Either<HttpClientError, ProcessedToolCallResult>> {
+  const parsed = safeParse(ToolCallResultSchema, body);
+  if (parsed.isLeft()) return parsed as Left<HttpClientError, any>;
+  // TODO: Implementation
+  return createRight({ value: "TODO" });
 }
 
 function safeParse<T>(
