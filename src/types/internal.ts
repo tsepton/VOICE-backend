@@ -23,6 +23,7 @@ export interface ProcessedMonitoringData extends ProcessedInput {
 }
 
 export interface ProcessedToolCallResult extends ProcessedInput {
+  id: UUID;
   value: string;
 }
 

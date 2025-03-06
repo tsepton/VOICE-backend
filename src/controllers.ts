@@ -15,6 +15,7 @@ import {
   ProcessedInput,
   ProcessedMonitoringData,
   ProcessedQuestion,
+  ProcessedToolCallResult,
   tryCatch,
   UUID,
 } from "./types/internal.ts";
@@ -24,7 +25,10 @@ export class VOICEServer<
   T extends typeof WebSocket.WebSocket = typeof WebSocket.WebSocket,
   U extends typeof HTTPIncomingMessage = typeof HTTPIncomingMessage
 > extends WebSocketServer {
-  private _activeClientToolCalls: Record<UUID, (response: string) => void> = {};
+  private _activeClientToolCalls: Record<
+    UUID,
+    (response: ProcessedToolCallResult) => void
+  > = {};
 
   constructor(options?: ServerOptions<T, U>, callback?: () => void) {
     super(options, callback);
@@ -84,25 +88,30 @@ export class VOICEServer<
     conversation: Conversation,
     ws: WebSocket
   ) {
-    const processedInput: Either<HttpClientError, ProcessedInput> =
-      await process(json);
+    const data: Either<HttpClientError, ProcessedInput> = await process(json);
 
-    if (processedInput.isLeft()) {
-      ws.send(JSON.stringify(processedInput.left));
+    if (data.isLeft()) {
+      ws.send(JSON.stringify(data.left));
       return;
     }
 
-    const data = processedInput.value;
+    const processedInput = data.value;
     switch (json.type) {
       case IncomingMessageType.QUESTION:
-        this._ask(data as ProcessedQuestion, conversation, ws);
+        this._ask(processedInput as ProcessedQuestion, conversation, ws);
         break;
       case IncomingMessageType.MONITORING:
-        this._monitor(data as ProcessedMonitoringData, conversation, ws);
+        this._monitor(
+          processedInput as ProcessedMonitoringData,
+          conversation,
+          ws
+        );
         break;
       case IncomingMessageType.TOOL_CALL_RESULT:
-        const { id, output } = data as { id: UUID; output: string };
-        // ws.send(JSON.stringify({ id, output }));
+        const { id } = processedInput as ProcessedToolCallResult;
+        this._activeClientToolCalls[id](
+          processedInput as ProcessedToolCallResult
+        );
         break;
     }
   }
@@ -130,9 +139,9 @@ export class VOICEServer<
   }
 
   private _remoteExecution(ws: WebSocket): RemoteExecution {
-    const requestId = uuidv4();
-
     const execution: RemoteExecution = (tool: ToolCall) => {
+      const requestId = uuidv4();
+
       const message: ClientToolCall = {
         type: "tool_call",
         id: uuidv4(),
@@ -145,17 +154,7 @@ export class VOICEServer<
           console.error(`Timeout for ${requestId}`);
           reject(new Error(`Timeout for tool call ${requestId}`));
         }, 5000);
-
-        const onResponse = (response: string) => {
-          clearTimeout(timeout);
-          console.log(`Tool call response received ${requestId}: ${response}`);
-
-          // TODO response is a string and should be parsed and sanitized
-
-          resolve({ value: response });
-        };
-
-        ws.once(`tool_call_result_${requestId}`, onResponse);
+        this._activeClientToolCalls[message.id] = resolve;
         ws.send(JSON.stringify(message));
       });
     };
