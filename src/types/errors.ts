@@ -30,13 +30,13 @@ export interface HttpServerError extends HttpError {
   code: number;
 }
 
-abstract class BaseHttpServorError extends Error implements HttpClientError  {
+abstract class BaseHttpServerError extends Error implements HttpClientError  {
   abstract code: number;
   constructor(public message: string, public info: any = undefined) {
     super();
   }
 }
 
-export class InternalServerError extends BaseHttpServorError {
+export class InternalServerError extends BaseHttpServerError {
   code = 500;
 }
