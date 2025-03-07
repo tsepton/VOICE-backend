@@ -7,7 +7,7 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import { ToolCall } from "@langchain/core/messages/tool";
-import { DynamicTool } from "@langchain/core/tools";
+import { DynamicTool, Tool } from "@langchain/core/tools";
 import { RemoteExecution } from "../../domain.ts";
 import { Agent } from "./agent.ts";
 
@@ -18,7 +18,7 @@ export abstract class ReActAgent implements Agent {
 
   protected abstract _system: string;
 
-  protected _tools: DynamicTool[] = [];
+  protected _tools: Tool[] = [];
 
   protected get _llmWithTools() {
     return this._llm.bindTools!(this._tools ?? []);
@@ -27,14 +27,13 @@ export abstract class ReActAgent implements Agent {
   constructor(protected _executor: RemoteExecution) {}
 
   public addTool(
-    name: string,
+    toolCall: ToolCall,
     description: string,
-    fn: (str: string) => Promise<string>
   ): void {
     const tool = new DynamicTool({
-      name,
-      description,
-      func: fn,
+      name: toolCall.name,
+      description: description,
+      func: async (str: string) => {}, // FIXME: is this necessary? it is not used beside
     });
     this._tools.push(tool);
   }

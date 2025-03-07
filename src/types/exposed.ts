@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-
 /// Messages sent by the client to the server
 export enum IncomingMessageType {
   QUESTION = "question",
   MONITORING = "monitoring",
   TOOL_CALL_RESULT = "tool_call_result",
+  TOOL_REGISTRATION = "tool_registration",
 }
 
 export const StarePointSchema = z.object({
@@ -30,10 +30,22 @@ export const ToolCallResultSchema = z.object({
   data: z.string().trim().min(1, { message: "Required" }), // TODO: Define the result data, see internal.ts
 });
 
+export const ToolSchema = z.object({
+  name: z.string().trim().min(1, { message: "Required" }),
+  description: z.string().trim().min(1, { message: "Required" }),
+  args: z.record(z.string()), // Equivalent of args: Record<string, any>
+});
+
+export const ToolRegistrationSchema = z.object({
+  type: z.literal(IncomingMessageType.TOOL_REGISTRATION),
+  data: z.array(ToolSchema),
+});
+
 export const IncomingMessageSchema = z.discriminatedUnion("type", [
   QuestionSchema,
   MonitoringSchema,
-  ToolCallResultSchema
+  ToolCallResultSchema,
+  ToolRegistrationSchema,
 ]);
 
 export type StarePoint = z.infer<typeof StarePointSchema>;
@@ -46,6 +58,7 @@ export type ToolCallResult = z.infer<typeof ToolCallResultSchema>;
 
 export type IncomingMessage = z.infer<typeof IncomingMessageSchema>;
 
+export type ToolRegistration = z.infer<typeof ToolRegistrationSchema>;
 
 /// Messages sent to the client by the server
 export interface OutgoingMessage {

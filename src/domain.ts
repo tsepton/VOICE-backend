@@ -6,11 +6,17 @@ import { Agent, getAgent } from "./libs/agent/agent.ts";
 import { ToolCall } from "@langchain/core/messages/tool";
 import Heatmap from "./libs/gaze/heatmap.ts";
 import { Answer } from "./types/exposed.ts";
-import { ProcessedMonitoringData, ProcessedQuestion, ProcessedToolCallResult, UUID } from "./types/internal.ts";
+import {
+  ProcessedMonitoringData,
+  ProcessedQuestion,
+  ProcessedToolCallResult,
+  ProcessedToolRegistration,
+  UUID,
+} from "./types/internal.ts";
 
-
-
-export type RemoteExecution = (toolCall: ToolCall) => Promise<ProcessedToolCallResult>;
+export type RemoteExecution = (
+  toolCall: ToolCall
+) => Promise<ProcessedToolCallResult>;
 
 export class Conversation {
   public readonly uuid: UUID;
@@ -20,14 +26,21 @@ export class Conversation {
   private _messages: BaseMessage[] = [];
 
   // TODO : load new exists and saveOnDisk should be inherited and therefore separated
-  public static load(uuid: string, remoteExecution: RemoteExecution): Conversation {
+  public static load(
+    uuid: string,
+    remoteExecution: RemoteExecution
+  ): Conversation {
     if (!this.exists(uuid)) throw new Error("Invalid UUID");
 
     const file = fs.readFileSync(`generated/${uuid}.json`, "utf8");
     const { agent: agentName, messages }: ConversationTxt = JSON.parse(file);
-    
+
     console.log(`${uuid} loaded.`);
-    return new Conversation(uuid, getAgent(remoteExecution, agentName), messages);
+    return new Conversation(
+      uuid,
+      getAgent(remoteExecution, agentName),
+      messages
+    );
   }
 
   public static new(remoteExecution: RemoteExecution): Conversation {
@@ -59,16 +72,6 @@ export class Conversation {
   async ask(question: ProcessedQuestion): Promise<Answer> {
     const timestamp = Date.now();
     const { query, gaze, image } = question;
-
-    // TODO : This should set by the client - keeping it for debugging for now
-    this._agent.addTool(
-      "getWeather",
-      "Get the weather of a given place",
-      async (place: string) => {
-        console.log("\n \n \n tool was called ! !\n\n\n");
-        return place + " is sunny";
-      }
-    );
 
     // Gaze representation generation
     console.time(`gaze generation ${timestamp}`);
@@ -102,9 +105,7 @@ export class Conversation {
     //   },
     // }));
 
-    const updatedQuery = [
-      `TODO.`,
-    ].join("\n\n");
+    const updatedQuery = [`TODO.`].join("\n\n");
 
     const message = new HumanMessage({
       content: [
@@ -117,6 +118,15 @@ export class Conversation {
     });
 
     this._messages.push(message); // TODO
+  }
+
+  addTool(tools: ProcessedToolRegistration): void {
+    tools.map((tool) => {
+      this._agent.addTool(
+        { name: tool.name, args: tool.args },
+        tool.description
+      );
+    });
   }
 
   public get serialized(): string {

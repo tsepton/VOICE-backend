@@ -16,6 +16,7 @@ import {
   ProcessedMonitoringData,
   ProcessedQuestion,
   ProcessedToolCallResult,
+  ProcessedToolRegistration,
   tryCatch,
   UUID,
 } from "./types/internal.ts";
@@ -78,7 +79,7 @@ export class VOICEServer<
     conversation: Conversation
   ): Promise<Either<CommunicationError, OutgoingMessage | undefined>> {
     // try
-    const treatment = async (): Promise<undefined | OutgoingMessage> => {
+    const handler = async (): Promise<undefined | OutgoingMessage> => {
       const json = JSON.parse(message.toString());
       const processedInput: ProcessedInput = (await process(json)).value; // Beware !
 
@@ -96,11 +97,15 @@ export class VOICEServer<
             processedInput as ProcessedToolCallResult
           );
           return;
+        case IncomingMessageType.TOOL_REGISTRATION:
+          const tools = processedInput as ProcessedToolRegistration;
+          conversation!.addTool(tools);
+          return;
       }
     };
 
     // catch
-    return tryCatch(treatment);
+    return tryCatch(handler);
   }
 
   private _remoteExecution(ws: WebSocket): RemoteExecution {

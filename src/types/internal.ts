@@ -1,3 +1,4 @@
+import { ToolCall } from "@langchain/core/messages/tool";
 import { Image } from "canvas";
 import {
   BaseClientError,
@@ -31,6 +32,8 @@ export interface ProcessedToolCallResult extends ProcessedInput {
   id: UUID;
   value: string;
 }
+
+export type ProcessedToolRegistration = (ToolCall & { description: string })[];
 
 export abstract class Either<L, R> {
   abstract match<T>(onLeft: (left: L) => T, onRight: (right: R) => T): T;

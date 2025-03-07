@@ -1,4 +1,5 @@
 import { BaseMessage } from "@langchain/core/messages";
+import { ToolCall } from "@langchain/core/messages/tool";
 import { RemoteExecution } from "../../domain.ts";
 import OllamaAssistant from "./ollama.ts";
 import OpenAIAgent from "./openai.ts";
@@ -18,9 +19,8 @@ export interface Agent {
   ) => Promise<BaseMessage[]>;
 
   addTool: (
-    name: string,
+    toolCall: ToolCall,
     description: string,
-    fn: (str: string) => Promise<string>
   ) => void;
 
   readonly name: string;

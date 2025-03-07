@@ -16,6 +16,7 @@ import {
   QuestionSchema,
   StarePoint,
   ToolCallResultSchema,
+  ToolRegistrationSchema,
 } from "./types/exposed.ts";
 import {
   AggregatedStarePoint,
@@ -27,6 +28,7 @@ import {
   ProcessedMonitoringData,
   ProcessedQuestion,
   ProcessedToolCallResult,
+  ProcessedToolRegistration,
 } from "./types/internal.ts";
 
 export async function process(
@@ -37,6 +39,7 @@ export async function process(
 
   let operation = body.type;
 
+  // FIXME : Could we depend on a generic type within the method signature ?
   switch (operation) {
     case IncomingMessageType.QUESTION:
       return await processQuestion(body);
@@ -44,6 +47,8 @@ export async function process(
       return await processMonitoringData(body);
     case IncomingMessageType.TOOL_CALL_RESULT:
       return await processToolCallResult(body);
+    case IncomingMessageType.TOOL_REGISTRATION:
+      return await processToolRegistration(body);
   }
 }
 
@@ -100,7 +105,30 @@ async function processToolCallResult(
   const parsed = safeParse(ToolCallResultSchema, body);
   if (parsed.isLeft()) return parsed as Left<ClientError, any>;
   // TODO: Implementation
-  return createRight({ value: "TODO" });
+  return createRight({ id: "TODO", value: "TODO" });
+}
+
+async function processToolRegistration(
+  body: IncomingMessage
+): Promise<Either<ClientError, ProcessedToolRegistration>> {
+  const parsed = safeParse(ToolRegistrationSchema, body);
+  if (parsed.isLeft()) return parsed as Left<ClientError, any>;
+  // TODO: Implementation
+
+  const tools: ProcessedToolRegistration = parsed.value.data.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    args: tool.args,
+  }));
+
+  const names = tools.map((tool) => tool.name);
+  const hasDuplicates = new Set(names).size !== names.length;
+  if (hasDuplicates)
+    return createLeft(
+      new UnprocessableContentError("Multiple tools with same name.")
+    );
+
+  return createRight(tools);
 }
 
 function safeParse<T>(
