@@ -1,19 +1,19 @@
 import { ToolCall } from "@langchain/core/messages/tool";
 import { IncomingMessage as HTTPIncomingMessage } from "http";
 import { v4 as uuidv4 } from "uuid";
-import { ServerOptions, WebSocket, WebSocketServer } from "ws";
+import { RawData, ServerOptions, WebSocket, WebSocketServer } from "ws";
 import { Conversation, RemoteExecution } from "./domain.ts";
-import { ClientError, RequestTimeout } from "./types/errors.ts";
+import { CommunicationError, RequestTimeout } from "./types/errors.ts";
 import {
   ClientToolCall,
   ConversationInfo,
-  IncomingMessage,
   IncomingMessageType,
   OutgoingMessage,
 } from "./types/exposed.ts";
 import {
   Either,
   ProcessedInput,
+  ProcessedMonitoringData,
   ProcessedQuestion,
   ProcessedToolCallResult,
   tryCatch,
@@ -37,7 +37,6 @@ export class VOICEServer<
   public initWebsocket() {
     this.on("connection", (ws: WebSocket, req: HTTPIncomingMessage) => {
       console.log(`WebSocket connection established on context : ${req.url}`);
-      let conversation: Conversation | undefined;
 
       if (!req.url?.includes("/chat")) {
         ws.close(1002, "Invalid URL context");
@@ -45,38 +44,22 @@ export class VOICEServer<
       }
 
       const uuid: string | undefined = req.url.split("uuid=").splice(1).pop();
+      const maybeConv = retrieveConversation(uuid, this._remoteExecution(ws));
 
-      conversation = retrieveConversation(
-        uuid,
-        this._remoteExecution(ws)
-      ).match(
-        (error) => {
-          ws.close(1002, JSON.stringify(error));
-          return undefined;
-        },
-        (conversation) => {
-          const info: ConversationInfo = {
-            uuid: conversation.uuid,
-            type: "info",
-          };
-          ws.send(JSON.stringify(info));
-          return conversation;
-        }
-      );
-
-      if (!conversation) {
-        ws.close(1002, "Invalid UUID");
+      if (maybeConv.isLeft()) {
+        ws.close(1002, maybeConv.error.message);
         return;
       }
 
+      const conversation = maybeConv.value;
+      const info: ConversationInfo = {
+        uuid: conversation.uuid,
+        type: "info",
+      };
+      ws.send(JSON.stringify(info));
+
       ws.on("message", async (message) => {
-        console.assert(conversation !== undefined);
-        (
-          await tryCatch(async () => {
-            const json = JSON.parse(message.toString());
-            return await this._handleMessage(json, conversation!, ws);
-          })
-        ).match(
+        (await this._handleMessage(message, conversation)).match(
           (error) => ws.send(JSON.stringify(error)),
           (answer: undefined | OutgoingMessage) => {
             if (!!answer) ws.send(JSON.stringify(answer));
@@ -90,33 +73,34 @@ export class VOICEServer<
     });
   }
 
-  private async _handleMessage(
-    json: IncomingMessage,
-    conversation: Conversation,
-    ws: WebSocket
-  ): Promise<OutgoingMessage | undefined> {
-    const data: Either<ClientError, ProcessedInput> = await process(json);
+  private _handleMessage(
+    message: RawData,
+    conversation: Conversation
+  ): Promise<Either<CommunicationError, OutgoingMessage | undefined>> {
+    // try
+    const treatment = async (): Promise<undefined | OutgoingMessage> => {
+      const json = JSON.parse(message.toString());
+      const processedInput: ProcessedInput = (await process(json)).value; // Beware !
 
-    if (data.isLeft()) {
-      ws.send(JSON.stringify(data.left));
-      return;
-    }
+      switch (json.type) {
+        case IncomingMessageType.QUESTION:
+          const question = processedInput as ProcessedQuestion;
+          return conversation!.ask(question);
+        case IncomingMessageType.MONITORING:
+          const data = processedInput as ProcessedMonitoringData;
+          conversation!.addMonitoringData(data);
+          return;
+        case IncomingMessageType.TOOL_CALL_RESULT:
+          const { id } = processedInput as ProcessedToolCallResult;
+          this._activeClientToolCalls[id](
+            processedInput as ProcessedToolCallResult
+          );
+          return;
+      }
+    };
 
-    const processedInput = data.value;
-    switch (json.type) {
-      case IncomingMessageType.QUESTION:
-        return conversation!.ask(processedInput as ProcessedQuestion);
-      case IncomingMessageType.MONITORING:
-        conversation!.addMonitoringData(data);
-        break;
-      case IncomingMessageType.TOOL_CALL_RESULT:
-        const { id } = processedInput as ProcessedToolCallResult;
-        this._activeClientToolCalls[id](
-          processedInput as ProcessedToolCallResult
-        );
-        break;
-    }
-    return;
+    // catch
+    return tryCatch(treatment);
   }
 
   private _remoteExecution(ws: WebSocket): RemoteExecution {

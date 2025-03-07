@@ -45,10 +45,17 @@ export abstract class Either<L, R> {
 
   get value(): R {
     return this.match(
-      () => {
-        throw new Error("Tried to get value of Left");
+      (left) => {
+        throw left;
       },
       (right) => right
+    );
+  }
+
+  get error(): L | undefined {
+    return this.match(
+      (left) => left,
+      (_) => undefined
     );
   }
 }
@@ -61,6 +68,10 @@ export class Left<L, R> extends Either<L, R> {
   match<T>(onLeft: (left: L) => T, _: (right: R) => T): T {
     return onLeft(this.left);
   }
+
+  get error(): L {
+    return this.left;
+  }
 }
 
 export class Right<L, R> extends Either<L, R> {
@@ -70,6 +81,10 @@ export class Right<L, R> extends Either<L, R> {
 
   match<T>(_: (left: L) => T, onRight: (right: R) => T): T {
     return onRight(this.right);
+  }
+
+  get error(): undefined {
+    return undefined;
   }
 }
 
