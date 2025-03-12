@@ -85,7 +85,8 @@ export class Conversation {
     this._messages = await this._agent.prompt(
       query,
       [original, gazeRepresentation.get("jpeg")],
-      this._messages
+      // this._messages
+      []
     );
     console.timeEnd(`llm generation ${timestamp}`);
 
@@ -122,6 +123,8 @@ export class Conversation {
 
   addTool(tools: ProcessedToolRegistration): void {
     tools.map((tool) => {
+      console.log(`Adding tool ${tool.name}`);
+      console.log(tool.args);
       this._agent.addTool(
         { name: tool.name, args: tool.args },
         tool.description
