@@ -36,6 +36,8 @@ export class VOICEServer<
   }
 
   public initWebsocket() {
+    console.log("WebSocket server initializing...");
+
     this.on("connection", (ws: WebSocket, req: HTTPIncomingMessage) => {
       console.log(`WebSocket connection established on context : ${req.url}`);
 
@@ -60,6 +62,7 @@ export class VOICEServer<
       ws.send(JSON.stringify(info));
 
       ws.on("message", async (message) => {
+        console.log("Message received");
         (await this._handleMessage(message, conversation)).match(
           (error) => ws.send(JSON.stringify(error)),
           (answer: undefined | OutgoingMessage) => {
@@ -68,7 +71,13 @@ export class VOICEServer<
         );
       });
 
+      ws.on("error", (error) => {
+        console.error(error);
+        ws.close(1002, "Websocket error");
+      });
+
       ws.on("close", () => {
+        console.log("Connection closed");
         conversation?.saveOnDisk();
       });
     });
@@ -80,6 +89,7 @@ export class VOICEServer<
   ): Promise<Either<CommunicationError, OutgoingMessage | undefined>> {
     // try
     const handler = async (): Promise<undefined | OutgoingMessage> => {
+
       const json = JSON.parse(message.toString());
       const processedInput: ProcessedInput = (await process(json)).value; // Beware !
 

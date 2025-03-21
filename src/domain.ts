@@ -85,7 +85,7 @@ export class Conversation {
     this._messages = await this._agent.prompt(
       query,
       [original, gazeRepresentation.get("jpeg")],
-      // this._messages
+      // this._messages // TODO : This has been removed for IUI demo to stick with the evaluation setup
       []
     );
     console.timeEnd(`llm generation ${timestamp}`);
